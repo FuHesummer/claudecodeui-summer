@@ -45,8 +45,36 @@ export interface ChatMessage {
     childTools: SubagentChildTool[];
     currentToolIndex: number;
     isComplete: boolean;
+    taskId?: string;                 // SDK task_id for matching progress messages
+    description?: string;            // Agent task description
+    progressLog?: string[];          // Agent real-time progress text
   };
+  // Real-time rendering fields
+  toolProgress?: string[];         // Tool execution intermediate output
+  isToolStarted?: boolean;         // content_block_start received, awaiting params/result
+  thinkingDurationMs?: number;     // How long thinking took
   [key: string]: unknown;
+}
+
+export interface CostInfo {
+  totalCostUsd?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  durationMs?: number;
+  model?: string;
+}
+
+export interface RateLimitState {
+  isLimited: boolean;
+  retryAfterMs?: number;
+  message?: string;
+  startedAt?: number;
+}
+
+export interface AgentStatusState {
+  text: string;
+  isActive: boolean;
+  timestamp: number;
 }
 
 export interface ClaudeSettings {
