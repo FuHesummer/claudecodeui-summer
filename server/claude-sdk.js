@@ -12,6 +12,16 @@
  * - WebSocket message streaming
  */
 
+import { createRequire } from 'module';
+if (!globalThis.require) {
+  globalThis.require = createRequire(import.meta.url);
+}
+
+// Prevent "Claude Code cannot be launched inside another Claude Code session" error
+// when this server itself runs inside a Claude Code session
+delete process.env.CLAUDECODE;
+delete process.env.CLAUDE_CODE_ENTRYPOINT;
+
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
@@ -160,6 +170,8 @@ function mapCliOptionsToSDK(options = {}) {
   // Handle tool permissions
   if (settings.skipPermissions && permissionMode !== 'plan') {
     // When skipping permissions, use bypassPermissions mode
+    // Set IS_SANDBOX=1 to allow bypassPermissions under root/sudo
+    process.env.IS_SANDBOX = '1';
     sdkOptions.permissionMode = 'bypassPermissions';
   }
 
@@ -264,6 +276,62 @@ function transformMessage(sdkMessage) {
     };
   }
   return sdkMessage;
+}
+
+/**
+ * Classifies an SDK message into a subType for frontend routing.
+ * Pure function — no side effects.
+ * @param {Object} message - Raw SDK message
+ * @returns {string} Classification tag
+ */
+function classifySDKMessage(message) {
+  if (!message || typeof message !== 'object') return 'unknown';
+
+  // Stream events (content_block_start, content_block_delta, etc.)
+  if (message.type === 'content_block_start' ||
+      message.type === 'content_block_delta' ||
+      message.type === 'content_block_stop' ||
+      message.type === 'message_start' ||
+      message.type === 'message_delta' ||
+      message.type === 'message_stop') {
+    return 'stream_event';
+  }
+
+  // Result messages (completion with usage/cost)
+  if (message.type === 'result') return 'result';
+
+  // System init messages
+  if (message.type === 'system') return 'system';
+
+  // Assistant messages with content arrays
+  if (message.role === 'assistant' && message.content) return 'assistant';
+
+  // User messages (tool results)
+  if (message.role === 'user' && message.content) return 'user';
+
+  // Tool progress (has tool_use_id + progress content)
+  if (message.tool_use_id && (message.content || message.output)) return 'tool_progress';
+
+  // Task lifecycle events
+  if (message.task_id) {
+    if (message.type === 'task_started' || (message.started !== undefined)) return 'task_started';
+    if (message.type === 'task_notification' || message.notification) return 'task_notification';
+    return 'task_progress';
+  }
+
+  // Rate limit events
+  if (message.type === 'rate_limit' || message.retry_after_ms !== undefined) return 'rate_limit';
+
+  // Status messages
+  if (message.type === 'status' || (message.status && typeof message.status === 'string' && !message.role)) return 'status';
+
+  // Hook lifecycle events
+  if (message.type === 'hook_started' || message.type === 'hook_progress') return message.type;
+
+  // Compact boundary
+  if (message.type === 'compact_boundary') return 'compact_boundary';
+
+  return 'unknown';
 }
 
 /**
@@ -607,8 +675,10 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
       // Transform and send message to WebSocket
       const transformedMessage = transformMessage(message);
+      const subType = classifySDKMessage(message);
       ws.send({
         type: 'claude-response',
+        subType,
         data: transformedMessage,
         sessionId: capturedSessionId || sessionId || null
       });
