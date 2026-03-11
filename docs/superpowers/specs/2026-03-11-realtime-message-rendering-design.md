@@ -59,7 +59,7 @@ No other backend changes.
 
 ### 2.1 Refactor `useChatRealtimeHandlers.ts`
 
-The current 1189-line monolith is split into a routing entry point (~300 lines) plus modular handlers:
+The current 1188-line monolith is split into a routing entry point (~300 lines) plus modular handlers:
 
 ```
 src/components/chat/hooks/
@@ -110,6 +110,17 @@ case 'claude-response': {
     case 'result':
       handleResult(data, chatActions, tokenActions);
       break;
+    case 'hook_started':
+    case 'hook_progress':
+      // Hooks are internal lifecycle events — log for debugging, no UI rendering
+      console.debug(`[hook] ${subType}`, data);
+      break;
+    case 'compact_boundary':
+      // Context compaction boundary — no UI action needed
+      console.debug('[compact_boundary]', data);
+      break;
+    case 'system':
+    case 'unknown':
     default:
       handleLegacyMessage(data, ...);
   }
@@ -120,7 +131,7 @@ case 'claude-response': {
 
 Handles all `content_block_start`, `content_block_delta`, `content_block_stop`, `message_start`, `message_delta`, `message_stop` events.
 
-**Streaming buffer**: Reduced from 100ms to 33ms (~2 frames).
+**Streaming buffer**: Reduced from 100ms to 33ms (~2 frames at 60fps). Rationale: 100ms introduces perceptible lag during fast text streaming; 33ms aligns with double-frame timing for smooth visual updates while still batching enough to avoid excessive React re-renders. The buffer interval is defined as a named constant (`STREAM_FLUSH_INTERVAL_MS`) for easy tuning.
 
 **New capabilities**:
 
@@ -166,10 +177,15 @@ SDKTaskNotificationMessage { task_id, status, result }
 
 ### 2.6 `handleStatusMessage.ts` — Global status
 
+**Important**: The existing `claude-status` WebSocket message type (handled at top-level switch, not under `claude-response`) is a **separate mechanism** from the SDK `status` subType. The existing `claude-status` is emitted by the backend itself (e.g., session lifecycle events, token counts) and continues to work as-is via `setClaudeStatus()`. The new `status` subType under `claude-response` carries SDK-level status messages forwarded from the agent SDK. Both coexist:
+
+- `claude-status` (top-level WS type) → existing `setClaudeStatus()` handler — **unchanged**
+- `claude-response` + `subType: 'status'` → new `handleStatusMessage()` → updates `agentStatusState`
+
 ```
 SDKStatusMessage { status, message }
   → Update agentStatusState (independent state, not chatMessages)
-  → UI: status text above ChatInput
+  → UI: status text above ChatInput (complements existing claude-status display)
 ```
 
 ### 2.7 `handleRateLimit.ts` — Rate limit handling
@@ -205,16 +221,22 @@ interface ChatMessage {
 }
 ```
 
-### 3.2 `SubagentState` additions
+### 3.2 `SubagentState` additions (inline in `ChatMessage`)
+
+Note: `subagentState` is defined inline within `ChatMessage`, not as a standalone exported interface. The new fields are added to the existing inline type:
 
 ```typescript
-interface SubagentState {
-  // ... existing fields unchanged ...
-
-  // NEW fields
-  taskId?: string;                 // SDK task_id for matching progress messages
-  description?: string;            // Agent task description
-  progressLog?: string[];          // Agent real-time progress text
+interface ChatMessage {
+  // ... existing fields ...
+  subagentState?: {
+    childTools: SubagentChildTool[];
+    currentToolIndex: number;
+    isComplete: boolean;
+    // NEW fields
+    taskId?: string;                 // SDK task_id for matching progress messages
+    description?: string;            // Agent task description
+    progressLog?: string[];          // Agent real-time progress text
+  };
 }
 ```
 
@@ -245,9 +267,32 @@ interface AgentStatusState {
 
 These live outside `chatMessages[]` as independent React state in the chat context or hook.
 
+### 3.4 State plumbing
+
+The three new independent state types (`CostInfo`, `RateLimitState`, `AgentStatusState`) are created as `useState` hooks in `useChatRealtimeHandlers.ts` and exposed via return value:
+
+```typescript
+// In useChatRealtimeHandlers.ts
+const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
+const [rateLimitState, setRateLimitState] = useState<RateLimitState | null>(null);
+const [agentStatusState, setAgentStatusState] = useState<AgentStatusState | null>(null);
+
+// Returned alongside existing values
+return { costInfo, rateLimitState, agentStatusState, /* ...existing returns */ };
+```
+
+Consumer components receive these via props from the parent that calls the hook:
+- `CostInfoBar` receives `costInfo` — rendered in `ChatInputControls.tsx`
+- `RateLimitBanner` receives `rateLimitState` — rendered in `ChatInterface.tsx` (chat area wrapper)
+- `AgentStatusState` displayed via existing `claudeStatus` mechanism or as separate text in `ChatComposer.tsx`
+
+The handler functions (`handleResult`, `handleRateLimit`, `handleStatusMessage`) receive the respective setter functions as part of their `actions` parameter object.
+
 ## 4. New UI Components
 
 ### 4.1 `ThinkingStreamBlock.tsx` (~80 lines)
+
+**Path**: `src/components/chat/view/subcomponents/ThinkingStreamBlock.tsx` (alongside `MessageComponent.tsx`)
 
 Replaces the existing static `<details>` block for thinking. Supports real-time streaming.
 
@@ -259,6 +304,8 @@ Replaces the existing static `<details>` block for thinking. Supports real-time 
 
 ### 4.2 `ToolProgressDisplay.tsx` (~60 lines)
 
+**Path**: `src/components/chat/tools/components/ToolProgressDisplay.tsx` (alongside `SubagentContainer.tsx`)
+
 Embedded inside existing tool cards (via `ToolRenderer`).
 
 - Terminal-style dark background, monospace font
@@ -268,6 +315,8 @@ Embedded inside existing tool cards (via `ToolRenderer`).
 
 ### 4.3 `RateLimitBanner.tsx` (~50 lines)
 
+**Path**: `src/components/chat/view/subcomponents/RateLimitBanner.tsx` (alongside `MessageComponent.tsx`)
+
 Floating banner at top of chat area.
 
 - Amber background with countdown timer
@@ -275,6 +324,8 @@ Floating banner at top of chat area.
 - Non-intrusive, does not push content down
 
 ### 4.4 `CostInfoBar.tsx` (~40 lines)
+
+**Path**: `src/components/chat/view/subcomponents/CostInfoBar.tsx` (alongside `ChatInputControls.tsx`)
 
 Embedded in the input area's status bar, next to existing token budget display.
 
@@ -284,12 +335,13 @@ Embedded in the input area's status bar, next to existing token budget display.
 
 ### 4.5 Existing component modifications
 
-| Component | Change |
-|---|---|
-| `MessageComponent.tsx` | Render `ThinkingStreamBlock` for `isThinking + isStreaming`; show loading state for `isToolStarted` |
-| `ToolRenderer.tsx` | Embed `ToolProgressDisplay` when `toolProgress` has content |
-| `SubagentContainer.tsx` | Match by `taskId`; render `progressLog` as real-time text; use SDK lifecycle events for start/complete states |
-| ChatInput area component | Add `AgentStatusState` text display above input; embed `CostInfoBar` next to token budget |
+| Component | Actual Path | Change |
+|---|---|---|
+| `MessageComponent.tsx` | `src/components/chat/view/subcomponents/MessageComponent.tsx` | Render `ThinkingStreamBlock` for `isThinking + isStreaming`; show loading state for `isToolStarted` |
+| `ToolRenderer.tsx` | `src/components/chat/tools/ToolRenderer.tsx` | Embed `ToolProgressDisplay` when `toolProgress` has content |
+| `SubagentContainer.tsx` | `src/components/chat/tools/components/SubagentContainer.tsx` | Match by `taskId`; render `progressLog` as real-time text; use SDK lifecycle events for start/complete states |
+| `ChatInputControls.tsx` | `src/components/chat/view/subcomponents/ChatInputControls.tsx` | Embed `CostInfoBar` next to token budget display |
+| `ChatComposer.tsx` | `src/components/chat/view/subcomponents/ChatComposer.tsx` | Add `AgentStatusState` text display above input |
 
 ## 5. i18n
 
@@ -299,7 +351,7 @@ New keys in `chat` namespace:
 
 | Key | English |
 |---|---|
-| `thinking.streaming` | `Thinking...` |
+| `thinking.streamingTitle` | `Thinking...` |
 | `thinking.duration` | `Thought for {{seconds}}s` |
 | `tool.started` | `Starting {{toolName}}...` |
 | `tool.running` | `Running` |
@@ -319,7 +371,7 @@ New keys in `chat` namespace:
 |---|---|---|
 | `server/claude-sdk.js` | Modify | +30 |
 | `src/components/chat/types/types.ts` | Modify | +25 |
-| `src/components/chat/hooks/useChatRealtimeHandlers.ts` | Refactor | ~300 (from 1189) |
+| `src/components/chat/hooks/useChatRealtimeHandlers.ts` | Refactor | ~300 (from 1188) |
 | `src/components/chat/hooks/handlers/handleStreamEvent.ts` | New | ~200 |
 | `src/components/chat/hooks/handlers/handleAssistantMessage.ts` | New | ~150 |
 | `src/components/chat/hooks/handlers/handleToolResult.ts` | New | ~100 |
@@ -330,14 +382,15 @@ New keys in `chat` namespace:
 | `src/components/chat/hooks/handlers/handleResult.ts` | New | ~60 |
 | `src/components/chat/hooks/handlers/handleLegacyMessage.ts` | New | ~50 |
 | `src/components/chat/hooks/handlers/index.ts` | New | ~15 |
-| `src/components/chat/ThinkingStreamBlock.tsx` | New | ~80 |
-| `src/components/chat/ToolProgressDisplay.tsx` | New | ~60 |
-| `src/components/chat/RateLimitBanner.tsx` | New | ~50 |
-| `src/components/chat/CostInfoBar.tsx` | New | ~40 |
-| `src/components/chat/MessageComponent.tsx` | Modify | +30 |
-| `src/components/chat/ToolRenderer.tsx` | Modify | +15 |
-| `src/components/chat/SubagentContainer.tsx` | Modify | +40 |
-| ChatInput area component | Modify | +20 |
+| `src/components/chat/view/subcomponents/ThinkingStreamBlock.tsx` | New | ~80 |
+| `src/components/chat/tools/components/ToolProgressDisplay.tsx` | New | ~60 |
+| `src/components/chat/view/subcomponents/RateLimitBanner.tsx` | New | ~50 |
+| `src/components/chat/view/subcomponents/CostInfoBar.tsx` | New | ~40 |
+| `src/components/chat/view/subcomponents/MessageComponent.tsx` | Modify | +30 |
+| `src/components/chat/tools/ToolRenderer.tsx` | Modify | +15 |
+| `src/components/chat/tools/components/SubagentContainer.tsx` | Modify | +40 |
+| `src/components/chat/view/subcomponents/ChatInputControls.tsx` | Modify | +10 |
+| `src/components/chat/view/subcomponents/ChatComposer.tsx` | Modify | +10 |
 | `src/i18n/locales/en/chat.json` | Modify | +15 |
 | `src/i18n/locales/ko/chat.json` | Modify | +15 |
 | `src/i18n/locales/zh-CN/chat.json` | Modify | +15 |
