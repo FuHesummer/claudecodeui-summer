@@ -46,6 +46,6 @@ jobs:
         run: npm run typecheck
 
       - name: Release
-        run: npx release-it --ci
+        run: npx release-it --ci --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

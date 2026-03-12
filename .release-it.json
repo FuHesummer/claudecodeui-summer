@@ -3,7 +3,8 @@
     "commitMessage": "chore(release): v${version}",
     "tagName": "v${version}",
     "requireBranch": "main",
-    "requireCleanWorkingDir": true
+    "requireCleanWorkingDir": false,
+    "pushRepo": "origin"
   },
   "npm": {
     "publish": true,
