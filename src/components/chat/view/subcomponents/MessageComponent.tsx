@@ -11,6 +11,9 @@ import { formatUsageLimitText } from '../../utils/chatFormatting';
 import { getClaudePermissionSuggestion } from '../../utils/chatPermissions';
 import type { Project } from '../../../../types/app';
 import { ToolRenderer, shouldHideToolResult } from '../../tools';
+import CompactBoundaryDivider from './CompactBoundaryDivider';
+import HookEventCard from './HookEventCard';
+import InlineStatusText from './InlineStatusText';
 import { Markdown } from './Markdown';
 import MessageCopyControl from './MessageCopyControl';
 import ThinkingStreamBlock from './ThinkingStreamBlock';
@@ -43,6 +46,30 @@ type InteractiveOption = {
 
 type PermissionGrantState = 'idle' | 'granted' | 'error';
 const COPY_HIDDEN_TOOL_NAMES = new Set(['Bash', 'Edit', 'Write', 'ApplyPatch']);
+
+/** Collapsible user message content — truncates messages longer than 15 lines */
+function UserMessageContent({ content }: { content: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const lines = content.split('\n');
+  const isLong = lines.length > 15;
+  const displayContent = expanded || !isLong ? content : lines.slice(0, 15).join('\n');
+
+  return (
+    <>
+      <Markdown className="prose prose-sm prose-gray max-w-none dark:prose-invert">
+        {displayContent}
+      </Markdown>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1 text-xs text-primary hover:underline"
+        >
+          {expanded ? 'Show less' : `Show ${lines.length - 15} more lines`}
+        </button>
+      )}
+    </>
+  );
+}
 
 const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, onShowSettings, onGrantToolPermission, autoExpandTools, showRawParameters, showThinking, selectedProject, provider }: MessageComponentProps) => {
   const { t } = useTranslation('chat');
@@ -109,42 +136,55 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
     return null;
   }
 
+  // Route new message types added in Phase 2
+  if (message.isHookEvent) {
+    return <HookEventCard message={message} />;
+  }
+
+  if (message.isCompactBoundary) {
+    return <CompactBoundaryDivider />;
+  }
+
+  if (message.isStatusInline) {
+    return <InlineStatusText message={message} />;
+  }
+
   return (
     <div
       ref={messageRef}
       data-message-timestamp={message.timestamp || undefined}
-      className={`chat-message ${message.type} ${isGrouped ? 'grouped' : ''} ${message.type === 'user' ? 'flex justify-end px-3 sm:px-0' : 'px-3 sm:px-0'}`}
+      className={`chat-message ${message.type} ${isGrouped ? 'grouped' : ''} px-3 sm:px-0`}
     >
       {message.type === 'user' ? (
-        /* User message bubble on the right */
-        <div className="flex w-full items-end space-x-0 sm:w-auto sm:max-w-[85%] sm:space-x-3 md:max-w-md lg:max-w-lg xl:max-w-xl">
-          <div className="group flex-1 rounded-2xl rounded-br-md bg-blue-600 px-3 py-2 text-white shadow-sm sm:flex-initial sm:px-4">
-            <div className="whitespace-pre-wrap break-words text-sm">
-              {message.content}
-            </div>
-            {message.images && message.images.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {message.images.map((img, idx) => (
-                  <img
-                    key={img.name || idx}
-                    src={img.data}
-                    alt={img.name}
-                    className="h-auto max-w-full cursor-pointer rounded-lg transition-opacity hover:opacity-90"
-                    onClick={() => window.open(img.data, '_blank')}
-                  />
-                ))}
-              </div>
+        /* User message — left-aligned with accent border */
+        <div
+          className="w-full rounded-lg border-l-2 border-primary/40 bg-primary/5 px-3 py-2 dark:bg-primary/10"
+          style={{ borderRadius: 'var(--chat-radius-message, 0.5rem)' }}
+        >
+          <div className="mb-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-medium">You</span>
+            <span className="opacity-50">·</span>
+            <span className="opacity-70">
+              {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {shouldShowUserCopyControl && (
+              <MessageCopyControl content={userCopyContent} messageType="user" />
             )}
-            <div className="mt-1 flex items-center justify-end gap-1 text-xs text-blue-100">
-              {shouldShowUserCopyControl && (
-                <MessageCopyControl content={userCopyContent} messageType="user" />
-              )}
-              <span>{formattedTime}</span>
-            </div>
           </div>
-          {!isGrouped && (
-            <div className="hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm text-white sm:flex">
-              U
+          <div className="text-sm text-foreground">
+            <UserMessageContent content={String(message.content || '')} />
+          </div>
+          {message.images && message.images.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {message.images.map((img, idx) => (
+                <img
+                  key={img.name || idx}
+                  src={img.data}
+                  alt={img.name}
+                  className="h-auto max-w-full cursor-pointer rounded-lg transition-opacity hover:opacity-90"
+                  onClick={() => window.open(img.data, '_blank')}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -181,6 +221,23 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
           )}
 
           <div className="w-full">
+            {/* Model name + timestamp header for assistant text messages */}
+            {message.type === 'assistant' && !message.isToolUse && !message.isThinking && !message.isInteractivePrompt && (
+              <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="inline-block h-2 w-2 rounded-full bg-primary/60" />
+                <span className="font-medium">{provider === 'cursor' ? 'Cursor' : provider === 'codex' ? 'Codex' : provider === 'gemini' ? 'Gemini' : 'Claude'}</span>
+                {message.modelName && (
+                  <>
+                    <span className="opacity-50">·</span>
+                    <span className="opacity-70">{message.modelName}</span>
+                  </>
+                )}
+                <span className="opacity-50">·</span>
+                <span className="opacity-70">
+                  {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
 
             {message.isToolUse ? (
               <>

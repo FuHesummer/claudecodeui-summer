@@ -841,6 +841,8 @@ Import `HookEventCard`, `CompactBoundaryDivider`, `InlineStatusText` at the top.
 
 **Verification**: Messages show `◉ Claude · claude-sonnet-4-20250514 · 12:34 PM` header.
 
+> **Commit note**: Step 3.1 changes are bundled into the Step 3.2/3.3 commit point (#9).
+
 ---
 
 ### Step 3.2: Enhanced Code Blocks
@@ -1180,6 +1182,8 @@ function UserMessageContent({ content }: { content: string }) {
 ```
 
 **Verification**: User messages have a subtle blue left border and "You · 12:34 PM" header. Long messages are collapsible.
+
+> **Commit note**: Step 3.6 changes are bundled into the Step 3.5 commit point (#11).
 
 ---
 
@@ -1703,6 +1707,31 @@ if (command.name === 'compact') {
 
 **Commit point**: `feat(chat): /compact slash command and maxTokens backend passthrough`
 
+**Backend handler**: The frontend sends `{ type: 'compact-context', sessionId }` over WebSocket, but no backend handler exists yet. Add a handler in `server/websocket.js` (or the appropriate WebSocket message dispatcher):
+
+```javascript
+case 'compact-context': {
+  const { sessionId } = message;
+  if (!sessionId) {
+    ws.send(JSON.stringify({ type: 'error', message: 'No sessionId for compact' }));
+    break;
+  }
+  // For Claude SDK sessions, the SDK handles compaction internally.
+  // This message is a no-op acknowledgment — the SDK auto-compacts when
+  // the context window exceeds the configured limit.
+  // For CLI-based providers, forward as a stdin command.
+  console.log(`[compact-context] Requested for session ${sessionId}`);
+  ws.send(JSON.stringify({
+    type: 'compact-context-ack',
+    sessionId,
+    message: 'Context compaction initiated',
+  }));
+  break;
+}
+```
+
+> **Note**: Full compaction implementation depends on the provider. For Claude SDK, the agent handles compaction automatically when `maxTurns` or token limits are reached. This handler provides the WebSocket acknowledgment path so the frontend doesn't error on an unhandled message type.
+
 ---
 
 ## Phase 6 — Layout + Navigation
@@ -1714,6 +1743,53 @@ if (command.name === 'compact') {
 Add a tab navigation section at the bottom of the sidebar. The sidebar structure needs a bottom-pinned section.
 
 **Props addition**: `Sidebar` needs `activeTab`, `setActiveTab`, `shouldShowTasksTab` props. These are currently passed to `MainContentHeader` → `MainContentTabSwitcher`. They need to also flow to `Sidebar`.
+
+**File**: `src/components/sidebar/types/types.ts`
+
+Add the new props to `SidebarProps`:
+
+```typescript
+import type { AppTab, LoadingProgress, Project, ProjectSession, SessionProvider } from '../../../types/app';
+
+export type SidebarProps = {
+  // ... existing props ...
+  projects: Project[];
+  selectedProject: Project | null;
+  selectedSession: ProjectSession | null;
+  onProjectSelect: (project: Project) => void;
+  onSessionSelect: (session: ProjectSession) => void;
+  onNewSession: (project: Project) => void;
+  onSessionDelete?: (sessionId: string) => void;
+  onProjectDelete?: (projectName: string) => void;
+  isLoading: boolean;
+  loadingProgress: LoadingProgress | null;
+  onRefresh: () => Promise<void> | void;
+  onShowSettings: () => void;
+  showSettings: boolean;
+  settingsInitialTab: string;
+  onCloseSettings: () => void;
+  isMobile: boolean;
+  // NEW: Tab navigation props (moved from MainContentHeader)
+  activeTab: AppTab;
+  setActiveTab: (tab: AppTab) => void;
+  shouldShowTasksTab: boolean;
+};
+```
+
+**File**: `src/components/sidebar/view/Sidebar.tsx`
+
+Destructure the new props and pass them to the tab navigation section:
+
+```tsx
+export default function Sidebar({
+  // ... existing props ...
+  activeTab,
+  setActiveTab,
+  shouldShowTasksTab,
+}: SidebarProps) {
+```
+
+**Parent component prop threading**: In the component that renders `<Sidebar>` (likely `App.tsx` or a layout component), add `activeTab`, `setActiveTab`, `shouldShowTasksTab` to the `<Sidebar>` JSX.
 
 **New component within Sidebar** — add before the closing `</div>` of the sidebar content:
 
@@ -1910,7 +1986,92 @@ if (shouldVirtualize) {
 
 ---
 
-### Step 6.4: Dark Mode Verification Pass
+### Step 6.4: Slash Command Panel Upgrade (§6.3)
+
+**Existing state**: `CommandMenu.tsx` already has namespace-based grouping (frequent, builtin, project, user, other), search filtering via fuse.js in `useSlashCommands.ts`, command descriptions, and `↑↓` / `Enter` / `Escape` keyboard navigation in `handleCommandMenuKeyDown`. The `/yolo` and `/compact` built-in commands are added in Steps 1.5 and 5.3 respectively.
+
+**Remaining work** — add `Ctrl+/` keyboard shortcut to open the command panel:
+
+**File**: `src/components/chat/hooks/useChatComposerState.ts`
+
+In the `handleKeyDown` callback, add a `Ctrl+/` handler before the existing `Enter` key handler:
+
+```typescript
+// After the Tab handler, before the Enter handler:
+if ((event.ctrlKey || event.metaKey) && event.key === '/') {
+  event.preventDefault();
+  toggleCommandMenu();
+  return;
+}
+```
+
+Where `toggleCommandMenu` is exposed from `useSlashCommands`:
+
+**File**: `src/components/chat/hooks/useSlashCommands.ts`
+
+Add a `toggleCommandMenu` function to the return value:
+
+```typescript
+const toggleCommandMenu = useCallback(() => {
+  if (showCommandMenu) {
+    resetCommandMenuState();
+  } else {
+    // Trigger command menu with empty filter (show all commands)
+    setShowCommandMenu(true);
+    setCommandInput('');
+    setSelectedCommandIndex(0);
+  }
+}, [showCommandMenu, resetCommandMenuState]);
+
+// Add to return object:
+return {
+  // ... existing returns ...
+  toggleCommandMenu,
+};
+```
+
+**File**: `src/components/chat/hooks/useChatComposerState.ts`
+
+Destructure `toggleCommandMenu` from `useSlashCommands()` alongside existing returns.
+
+**Verification**: Press `Ctrl+/` (or `Cmd+/` on Mac) → command panel opens/closes. All existing category grouping, search, and keyboard nav still works.
+
+---
+
+### Step 6.5: Input Box Keyboard Shortcuts (§6.4)
+
+**Existing state**: Auto-resize already works via `handleTextareaInput` (line 855). `Ctrl+Enter` / `Enter` send toggle already exists via `sendByCtrlEnter` prop. Image paste already handled by `react-dropzone`.
+
+**Remaining work** — add `Esc` to clear input:
+
+**File**: `src/components/chat/hooks/useChatComposerState.ts`
+
+In the `handleKeyDown` callback, add an `Escape` handler. Place it after the command menu key handler (since command menu's Escape should take priority when it's open):
+
+```typescript
+// After the command menu and file mentions key down handlers:
+if (event.key === 'Escape' && !showCommandMenu && !showFileDropdown) {
+  event.preventDefault();
+  if (input.trim()) {
+    setInput('');
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  }
+  return;
+}
+```
+
+> **Note**: The existing `CommandMenu` already handles `Escape` when open (closes the menu). This handler only fires when neither command menu nor file dropdown is active, so there's no conflict.
+
+**Verification**: Type text → press `Esc` → input clears and textarea returns to default height. With command menu open → `Esc` closes menu (not input).
+
+**Commit point**: `feat(composer): Ctrl+/ to toggle command panel, Esc to clear input`
+
+---
+
+### Step 6.6: Dark Mode Verification Pass
 
 Review all new components for dark mode support:
 
@@ -1928,7 +2089,7 @@ Review all new components for dark mode support:
 
 ---
 
-### Step 6.5: Accessibility Audit
+### Step 6.7: Accessibility Audit
 
 Add `aria-*` attributes to all new interactive elements:
 
@@ -1968,7 +2129,7 @@ Add `aria-*` attributes to all new interactive elements:
 | `src/components/chat/view/subcomponents/ContextUsageIndicator.tsx` | Token usage bar |
 | `src/components/chat/view/subcomponents/ContextUsagePopover.tsx` | Token usage detail popover |
 
-### Modified Files (15)
+### Modified Files (17)
 | File | Changes |
 |------|---------|
 | `src/index.css` | Chat design tokens |
@@ -1979,6 +2140,8 @@ Add `aria-*` attributes to all new interactive elements:
 | `src/components/chat/hooks/handlers/handleStreamEvent.ts` | Model extraction, usage extraction |
 | `src/components/chat/hooks/handlers/handleStatusMessage.ts` | Inline status + setChatMessages |
 | `src/components/chat/hooks/handlers/handleTaskLifecycle.ts` | Enhanced subagentState fields |
+| `src/components/chat/hooks/useSlashCommands.ts` | Add toggleCommandMenu |
+| `src/components/chat/hooks/useChatComposerState.ts` | Ctrl+/ shortcut, Esc to clear input |
 | `src/components/chat/view/subcomponents/ChatInputControls.tsx` | YOLO indicator, context indicator |
 | `src/components/chat/view/subcomponents/MessageComponent.tsx` | Message header, new message type routing |
 | `src/components/chat/view/subcomponents/ThinkingStreamBlock.tsx` | Collapsed default, duration |
@@ -2010,7 +2173,8 @@ Add `aria-*` attributes to all new interactive elements:
 14. `feat(chat): /compact slash command and maxTokens backend passthrough`
 15. `feat(layout): move tabs to sidebar bottom, add session time grouping`
 16. `feat(chat): virtual scrolling for long conversations, react-virtuoso`
-17. `chore(a11y): add aria attributes to all new components`
+17. `feat(composer): Ctrl+/ to toggle command panel, Esc to clear input`
+18. `chore(a11y): add aria attributes to all new components`
 
 ---
 
@@ -2032,7 +2196,7 @@ This plan is designed for **subagent-driven-development**:
 - **Phase 2** (Steps 2.1–2.5): Parallelizable — each handler is independent
 - **Phase 3** (Steps 3.1–3.6): Partially parallel — 3.1 independent from 3.4/3.5/3.6
 - **Phase 4** (Steps 4.1–4.3): Sequential — SubagentToolItem (4.1) must exist before SubagentContainer (4.2)
-- **Phase 5** (Steps 5.1–5.4): Parallelizable — indicator and slash command are independent
-- **Phase 6** (Steps 6.1–6.6): Partially parallel — layout change independent from virtual scrolling
+- **Phase 5** (Steps 5.1–5.3): Parallelizable — indicator and slash command are independent
+- **Phase 6** (Steps 6.1–6.7): Partially parallel — layout change independent from virtual scrolling; 6.4/6.5 (composer) independent from 6.1/6.2 (layout)
 
 After each commit point, run `npm run typecheck && npm run lint && npm run build` to verify.

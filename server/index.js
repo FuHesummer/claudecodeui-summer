@@ -1584,6 +1584,55 @@ function handleChatConnection(ws) {
                     type: 'active-sessions',
                     sessions: activeSessions
                 });
+            } else if (data.type === 'apply-code') {
+                const { filePath, content, projectPath } = data;
+
+                // Validate file path — reject absolute paths and directory traversal
+                if (!filePath || path.isAbsolute(filePath) || filePath.includes('..')) {
+                    writer.send({
+                        type: 'apply-code-result',
+                        success: false,
+                        filePath,
+                        error: 'Invalid file path: absolute paths and ".." are not allowed',
+                    });
+                } else if (!projectPath) {
+                    writer.send({
+                        type: 'apply-code-result',
+                        success: false,
+                        filePath,
+                        error: 'No project path provided',
+                    });
+                } else {
+                    const resolvedPath = path.resolve(projectPath, filePath);
+
+                    // Ensure resolved path is still within project
+                    if (!resolvedPath.startsWith(path.resolve(projectPath))) {
+                        writer.send({
+                            type: 'apply-code-result',
+                            success: false,
+                            filePath,
+                            error: 'Path escapes project directory',
+                        });
+                    } else {
+                        try {
+                            await fsPromises.mkdir(path.dirname(resolvedPath), { recursive: true });
+                            await fsPromises.writeFile(resolvedPath, content, 'utf-8');
+                            console.log('[apply-code] Written:', resolvedPath);
+                            writer.send({
+                                type: 'apply-code-result',
+                                success: true,
+                                filePath,
+                            });
+                        } catch (err) {
+                            writer.send({
+                                type: 'apply-code-result',
+                                success: false,
+                                filePath,
+                                error: err.message,
+                            });
+                        }
+                    }
+                }
             }
         } catch (error) {
             console.error('[ERROR] Chat WebSocket error:', error.message);

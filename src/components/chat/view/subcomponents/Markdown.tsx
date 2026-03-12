@@ -1,13 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useTranslation } from 'react-i18next';
+import CodeBlockHeader from './CodeBlockHeader';
 import { normalizeInlineCodeFences } from '../../utils/chatFormatting';
-import { copyTextToClipboard } from '../../../../utils/clipboard';
 
 type MarkdownProps = {
   children: React.ReactNode;
@@ -22,8 +21,6 @@ type CodeBlockProps = {
 };
 
 const CodeBlock = ({ node, inline, className, children, ...props }: CodeBlockProps) => {
-  const { t } = useTranslation('chat');
-  const [copied, setCopied] = useState(false);
   const raw = Array.isArray(children) ? children.join('') : String(children ?? '');
   const looksMultiline = /[\r\n]/.test(raw);
   const inlineDetected = inline || (node && node.type === 'inlineCode');
@@ -44,64 +41,26 @@ const CodeBlock = ({ node, inline, className, children, ...props }: CodeBlockPro
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : 'text';
 
+  // Extract file name from the node's meta (e.g. ```ts title="src/auth.ts")
+  const meta = (node?.data as any)?.meta || (node?.properties as any)?.metastring || '';
+  const titleMatch = /title="([^"]+)"/.exec(meta);
+  const fileName = titleMatch ? titleMatch[1] : undefined;
+
   return (
-    <div className="group relative my-2">
-      {language && language !== 'text' && (
-        <div className="absolute left-3 top-2 z-10 text-xs font-medium uppercase text-gray-400">{language}</div>
-      )}
-
-      <button
-        type="button"
-        onClick={() =>
-          copyTextToClipboard(raw).then((success) => {
-            if (success) {
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }
-          })
-        }
-        className="absolute right-2 top-2 z-10 rounded-md border border-gray-600 bg-gray-700/80 px-2 py-1 text-xs text-white opacity-0 transition-opacity hover:bg-gray-700 focus:opacity-100 active:opacity-100 group-hover:opacity-100"
-        title={copied ? t('codeBlock.copied') : t('codeBlock.copyCode')}
-        aria-label={copied ? t('codeBlock.copied') : t('codeBlock.copyCode')}
-      >
-        {copied ? (
-          <span className="flex items-center gap-1">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {t('codeBlock.copied')}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1">
-            <svg
-              className="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
-            </svg>
-            {t('codeBlock.copy')}
-          </span>
-        )}
-      </button>
-
+    <div className="group relative my-2 overflow-hidden rounded-lg border border-border/30 dark:border-border/20">
+      <CodeBlockHeader
+        fileName={fileName}
+        language={language}
+        code={raw}
+      />
       <SyntaxHighlighter
         language={language}
         style={oneDark}
         customStyle={{
           margin: 0,
-          borderRadius: '0.5rem',
+          borderRadius: 0,
           fontSize: '0.875rem',
-          padding: language && language !== 'text' ? '2rem 1rem 1rem 1rem' : '1rem',
+          padding: '1rem',
         }}
         codeTagProps={{
           style: {
