@@ -9,6 +9,9 @@ interface SubagentContainerProps {
     childTools: SubagentChildTool[];
     currentToolIndex: number;
     isComplete: boolean;
+    taskId?: string;
+    description?: string;
+    progressLog?: string[];
   };
 }
 
@@ -84,6 +87,17 @@ export const SubagentContainer: React.FC<SubagentContainerProps> = ({
                 </span>
               </>
             )}
+          </div>
+        )}
+
+        {/* Agent progress log */}
+        {subagentState.progressLog && subagentState.progressLog.length > 0 && !isComplete && (
+          <div className="mt-1 max-h-24 overflow-y-auto border-l border-purple-300/50 pl-2 dark:border-purple-600/50">
+            {subagentState.progressLog.slice(-10).map((line, idx) => (
+              <div key={idx} className="truncate text-[11px] text-gray-500 dark:text-gray-400">
+                {line}
+              </div>
+            ))}
           </div>
         )}
 
