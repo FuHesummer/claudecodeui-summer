@@ -33,6 +33,8 @@ Equivalent to `--dangerously-skip-permissions`. All tool calls auto-approved wit
 
 New sessions default to `permissionMode = 'bypassPermissions'` instead of `'default'`.
 
+> **Design decision**: The user explicitly requested YOLO-by-default behavior ("跳过权限提示...不需要我手动点击给权限类似于yolo全过"). This is a Summer Edition-specific default; upstream uses `'default'`. The YOLO visual indicator (§2.3) and the permission mode cycle button ensure users are always aware of the active mode and can switch at any time.
+
 **File**: `src/components/chat/hooks/useChatProviderState.ts`
 - Change initial state: `useState<PermissionMode>('bypassPermissions')`
 - When no saved mode exists in localStorage, default to `'bypassPermissions'`
@@ -144,10 +146,12 @@ Creates a `ChatMessage` with:
 
 **File**: `handleStreamEvent.ts`
 
+> **Note**: `message_start`, `message_delta`, and `message_stop` events already arrive as `subType: 'stream_event'` and are routed to `handleStreamEvent()`. No router-level change is needed — only internal changes within `handleStreamEvent.ts` to handle these event types.
+
 On `message_start` event:
 - Extract `data.message?.model` or `data.model`
-- Store in a ref/variable (e.g., `currentModelRef.current = modelName`)
-- When the first `content_block_delta` with text arrives, attach `modelName` to the ChatMessage being created
+- Store model name outside the handler in router-level state (e.g., a `currentModelRef` in `useChatRealtimeHandlers.ts`) since `handleStreamEvent` is a pure function that cannot use React refs directly
+- When the first `content_block_delta` with text arrives, pass the model name into the ChatMessage being created
 
 **ChatMessage extension**: Add optional `modelName?: string` field.
 
@@ -169,7 +173,18 @@ On `message_stop` event:
 
 **File**: `handleStatusMessage.ts`
 
-Currently only updates `agentStatusState` (status bar). Add: insert a lightweight ChatMessage for inline display:
+Currently only updates `agentStatusState` (status bar) and has NO access to `setChatMessages`. To also insert inline status messages into the chat, the handler signature must be extended:
+
+```typescript
+interface StatusActions {
+  setAgentStatusState: (state: AgentStatusState | null) => void;
+  setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;  // NEW
+}
+```
+
+The router (`useChatRealtimeHandlers.ts`) must pass `setChatMessages` to `handleStatusMessage()` when calling it.
+
+Insert a lightweight ChatMessage for inline display:
 
 ```typescript
 {
@@ -182,7 +197,9 @@ Currently only updates `agentStatusState` (status bar). Add: insert a lightweigh
 
 **Deduplication**: Don't insert if the last message is also `isStatusInline` with identical content.
 
-**Auto-cleanup**: When the next non-status message arrives, mark the last `isStatusInline` message as `isStale: true`. Stale inline status messages render as fully transparent (fade out) or are removed.
+**Auto-cleanup**: When the next non-status message arrives, mark the last `isStatusInline` message as `isStale: true`. Stale inline status messages render as fully transparent (fade out) or are removed. Growth is bounded because only the latest non-stale inline status is rendered visibly; stale messages are removed from the array entirely rather than just hidden.
+
+**Cleanup interval**: A `useEffect` cleanup in `useChatRealtimeHandlers.ts` should remove stale inline status messages older than 5 seconds on each new non-status message arrival, preventing unbounded array growth.
 
 **New component**: `InlineStatusText.tsx`
 - Gray italic text, small font
@@ -203,6 +220,8 @@ interface ChatMessage {
 }
 ```
 
+> **Note on existing types**: The actual codebase `CostInfo` interface uses `totalCostUsd?: number` (not `totalCost` / `currency`). The actual `ChatMessage` does NOT have `progressPercentage` or `subagentId` fields — progress is tracked via `toolProgress?: string[]` and subagent identity via `subagentState.taskId`.
+
 ---
 
 ## 4. Subagent Bubble with Real-Time Progress
@@ -213,7 +232,7 @@ Subagent (Task tool) displays as a visually distinct bubble card showing real-ti
 
 ### Current State
 
-- `SubagentContainer.tsx`: purple left border, tool history in `<details>`, progressLog as text list
+- `SubagentContainer.tsx` (at `src/components/chat/tools/components/SubagentContainer.tsx`): purple left border, tool history in `<details>`, progressLog as text list
 - `subagentState` tracks: `childTools[]`, `currentToolIndex`, `isComplete`, `taskId`, `description`, `progressLog[]`
 - `handleTaskLifecycle.ts` handles `task_started`, `task_progress`, `task_notification`
 
@@ -285,10 +304,13 @@ subagentState?: {
   taskId?: string;
   description?: string;
   progressLog?: string[];
-  elapsedMs?: number;       // NEW: tracked via setInterval while !isComplete
+  elapsedMs?: number;       // NEW: tracked via setInterval while !isComplete, cleanup in useEffect return
   modelName?: string;       // NEW: from task_started data
   toolCount?: number;       // NEW: total tools completed
 };
+```
+
+> **`elapsedMs` cleanup**: The `setInterval` that increments `elapsedMs` must be cleaned up in the component's `useEffect` return function. When `isComplete` becomes true or the component unmounts, `clearInterval()` is called.
 ```
 
 ---
@@ -335,6 +357,42 @@ New structure:
 - File name extracted from markdown fence meta: `` ```ts title="src/auth.ts" ``
 - Also inferred from surrounding context text (heuristic: if previous line contains a file path)
 - "Apply" button: sends code to backend as a Write operation (new WebSocket message type `apply-code`)
+
+**`apply-code` WebSocket message specification**:
+
+Frontend sends:
+```json
+{
+  "type": "apply-code",
+  "filePath": "src/auth/handler.ts",
+  "content": "export function authenticate() { ... }",
+  "sessionId": "current-session-id"
+}
+```
+
+Backend handler (new function in `server/claude-sdk.js` or a dedicated `server/apply-code.js`):
+1. **File path resolution**: Resolve `filePath` relative to the project's workspace root (from `selectedProject.path`). Reject absolute paths and paths containing `..` to prevent directory traversal.
+2. **Permission check**: If `permissionMode !== 'bypassPermissions'`, send a `permission-request` WebSocket message to the frontend for user confirmation before writing.
+3. **Write operation**: Use `fs.writeFile()` to write `content` to the resolved path. Create parent directories if they don't exist (`fs.mkdirSync({ recursive: true })`).
+4. **Response**: Send `apply-code-result` WebSocket message:
+   ```json
+   {
+     "type": "apply-code-result",
+     "success": true,
+     "filePath": "src/auth/handler.ts"
+   }
+   ```
+5. **Error handling**: On failure (permission denied, disk full, invalid path), send:
+   ```json
+   {
+     "type": "apply-code-result",
+     "success": false,
+     "filePath": "src/auth/handler.ts",
+     "error": "ENOENT: parent directory does not exist"
+   }
+   ```
+
+> **Note**: This is a direct file write, NOT an SDK tool call. It operates outside the agent conversation. The chokidar file watcher will detect the change and notify the frontend.
 - "Copy" button: copies to clipboard (existing functionality)
 - Line numbers: enabled by default
 - Syntax theme: VS Code dark+ inspired colors for dark mode, light+ for light mode
@@ -342,7 +400,7 @@ New structure:
 **New component**: `InlineDiffActions.tsx`
 - For Edit/Write tool results that show diffs
 - "Accept" / "Reject" buttons on the diff viewer
-- Accept sends approval via WebSocket; Reject reverts (if checkpoint available) or dismisses
+- Accept sends approval via WebSocket; Reject dismisses the diff (checkpoint/revert is a Non-Goal, deferred to future iteration)
 
 ### 5.3 Tool Call Cards — Compact Default
 
@@ -451,6 +509,7 @@ Position: Right side of composer toolbar area
 - Default from `VITE_CONTEXT_WINDOW` env var (currently 160000)
 - Priority: user setting > env var default
 - Also configurable in Settings page under a new "Context Window" section
+- **Backend reconciliation**: The frontend `maxTokens` user override is used ONLY for the context usage indicator display and for passing as `maxTokens` to the SDK in `mapCliOptionsToSDK()`. The backend `CONTEXT_WINDOW` env var remains the actual SDK context window; the user setting serves as a display cap / warning threshold. If the user sets a value larger than `CONTEXT_WINDOW`, the indicator uses `CONTEXT_WINDOW` as the true max and shows a warning tooltip.
 
 **Data source**: `token-budget` WebSocket message from backend `extractTokenBudget()`. Frontend calculates:
 ```
@@ -506,7 +565,7 @@ Features:
 ```
 
 **Changes**:
-- **`Sidebar.tsx`**: Add tab list section at bottom, separated by divider from sessions list
+- **`Sidebar.tsx`** (at `src/components/sidebar/view/Sidebar.tsx`): Add tab list section at bottom, separated by divider from sessions list
 - **`MainContentHeader.tsx`**: Remove `MainContentTabSwitcher` from header; header now shows only session name + settings
 - **Tab items**: Icon + label text, vertical stack, active state with primary color highlight + left accent bar
 - **`MainContentTabSwitcher.tsx`**: Repurpose or remove; logic moves to sidebar
@@ -659,13 +718,13 @@ All new components must support dark mode via:
 | `src/components/chat/view/subcomponents/ChatComposer.tsx` | Context indicator, auto-resize |
 | `src/components/chat/view/subcomponents/ChatInputControls.tsx` | YOLO label |
 | `src/components/chat/view/subcomponents/ChatMessagesPane.tsx` | Virtual scrolling |
-| `src/components/chat/view/subcomponents/SubagentContainer.tsx` | Full rewrite to bubble card |
+| `src/components/chat/tools/components/SubagentContainer.tsx` | Full rewrite to bubble card |
 | `src/components/chat/tools/ToolRenderer.tsx` | Compact default mode |
 | `src/components/chat/tools/configs/toolConfigs.ts` | Updated display configs |
 | `src/components/chat/view/subcomponents/ThinkingStreamBlock.tsx` | Collapsed default, gray line |
 | `src/components/main-content/view/subcomponents/MainContentHeader.tsx` | Remove tab switcher |
 | `src/components/main-content/view/subcomponents/MainContentTabSwitcher.tsx` | Move to sidebar |
-| `src/components/app/Sidebar.tsx` (or equivalent) | Add tab navigation section |
+| `src/components/sidebar/view/Sidebar.tsx` | Add tab navigation section |
 | `src/index.css` | Design tokens |
 | `server/claude-sdk.js` | IS_SANDBOX fix in permissionMode check |
 | Settings page components | Default permission mode, context window size |
