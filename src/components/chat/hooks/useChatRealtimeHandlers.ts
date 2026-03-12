@@ -1,9 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { decodeHtmlEntities, formatUsageLimitText } from '../utils/chatFormatting';
 import { safeLocalStorage } from '../utils/chatStorage';
-import type { ChatMessage, PendingPermissionRequest } from '../types/types';
+import type { ChatMessage, CostInfo, RateLimitState, AgentStatusState, PendingPermissionRequest } from '../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../types/app';
+import {
+  handleStreamEvent,
+  STREAM_FLUSH_INTERVAL_MS,
+  handleAssistantMessage,
+  handleToolResult,
+  handleToolProgress,
+  handleTaskLifecycle,
+  handleStatusMessage,
+  handleRateLimit,
+  handleResult,
+  handleLegacyMessage,
+} from './handlers';
 
 type PendingViewSession = {
   sessionId: string | null;
@@ -12,6 +24,7 @@ type PendingViewSession = {
 
 type LatestChatMessage = {
   type?: string;
+  subType?: string;
   data?: any;
   sessionId?: string;
   requestId?: string;
@@ -117,6 +130,9 @@ export function useChatRealtimeHandlers({
   onWebSocketReconnect,
 }: UseChatRealtimeHandlersArgs) {
   const lastProcessedMessageRef = useRef<LatestChatMessage | null>(null);
+  const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
+  const [rateLimitState, setRateLimitState] = useState<RateLimitState | null>(null);
+  const [agentStatusState, setAgentStatusState] = useState<AgentStatusState | null>(null);
 
   useEffect(() => {
     if (!latestMessage) {
@@ -314,6 +330,97 @@ export function useChatRealtimeHandlers({
         break;
 
       case 'claude-response': {
+        const subType = latestMessage.subType;
+
+        // --- subType-based routing (when backend provides classification) ---
+        if (subType) {
+          switch (subType) {
+            case 'stream_event':
+              handleStreamEvent(
+                latestMessage.data,
+                { streamBufferRef, streamTimerRef },
+                {
+                  setChatMessages,
+                  appendStreamingChunk: (chunk: string, newline?: boolean) =>
+                    appendStreamingChunk(setChatMessages, chunk, newline),
+                  finalizeStreamingMessage: () => finalizeStreamingMessage(setChatMessages),
+                },
+              );
+              break;
+
+            case 'assistant':
+              handleAssistantMessage(latestMessage.data, rawStructuredData, { setChatMessages });
+              break;
+
+            case 'user':
+              handleToolResult(latestMessage.data, rawStructuredData, { setChatMessages });
+              break;
+
+            case 'tool_progress':
+              handleToolProgress(latestMessage.data, { setChatMessages });
+              break;
+
+            case 'task_started':
+            case 'task_progress':
+            case 'task_notification':
+              handleTaskLifecycle(latestMessage.data, subType, { setChatMessages });
+              break;
+
+            case 'status':
+              handleStatusMessage(latestMessage.data, { setAgentStatusState });
+              break;
+
+            case 'rate_limit':
+              handleRateLimit(latestMessage.data, { setRateLimitState });
+              break;
+
+            case 'result':
+              handleResult(latestMessage.data, { setTokenBudget, setCostInfo });
+              break;
+
+            case 'hook_started':
+            case 'hook_progress':
+              console.debug(`[hook] ${subType}`, latestMessage.data);
+              break;
+
+            case 'compact_boundary':
+              console.debug('[compact_boundary]', latestMessage.data);
+              break;
+
+            case 'system': {
+              // System init handling — preserve existing logic
+              if (
+                structuredMessageData?.type === 'system' &&
+                structuredMessageData.subtype === 'init' &&
+                structuredMessageData.session_id
+              ) {
+                if (currentSessionId && structuredMessageData.session_id !== currentSessionId && isSystemInitForView) {
+                  setIsSystemSessionChange(true);
+                  onNavigateToSession?.(structuredMessageData.session_id);
+                  return;
+                }
+                if (!currentSessionId && isSystemInitForView) {
+                  setIsSystemSessionChange(true);
+                  onNavigateToSession?.(structuredMessageData.session_id);
+                  return;
+                }
+                if (currentSessionId && structuredMessageData.session_id === currentSessionId && isSystemInitForView) {
+                  return;
+                }
+              }
+              break;
+            }
+
+            case 'unknown':
+            default:
+              handleLegacyMessage(latestMessage.data, rawStructuredData, { setChatMessages });
+              break;
+          }
+          break;
+        }
+
+        // --- Fallback: legacy structural detection (no subType from backend) ---
+
         if (messageData && typeof messageData === 'object' && messageData.type) {
           if (messageData.type === 'content_block_delta' && messageData.delta?.text) {
             const decodedText = decodeHtmlEntities(messageData.delta.text);
@@ -324,7 +431,7 @@ export function useChatRealtimeHandlers({
                 streamBufferRef.current = '';
                 streamTimerRef.current = null;
                 appendStreamingChunk(setChatMessages, chunk, false);
-              }, 100);
+              }, STREAM_FLUSH_INTERVAL_MS);
             }
             return;
           }
@@ -342,6 +449,7 @@ export function useChatRealtimeHandlers({
           }
         }
 
+        // System init (legacy)
         if (
           structuredMessageData?.type === 'system' &&
           structuredMessageData.subtype === 'init' &&
@@ -354,7 +462,6 @@ export function useChatRealtimeHandlers({
           onNavigateToSession?.(structuredMessageData.session_id);
           return;
         }
-
         if (
           structuredMessageData?.type === 'system' &&
           structuredMessageData.subtype === 'init' &&
@@ -366,7 +473,6 @@ export function useChatRealtimeHandlers({
           onNavigateToSession?.(structuredMessageData.session_id);
           return;
         }
-
         if (
           structuredMessageData?.type === 'system' &&
           structuredMessageData.subtype === 'init' &&
@@ -378,147 +484,16 @@ export function useChatRealtimeHandlers({
           return;
         }
 
-        if (structuredMessageData && Array.isArray(structuredMessageData.content)) {
-          const parentToolUseId = rawStructuredData?.parentToolUseId;
-
-          structuredMessageData.content.forEach((part: any) => {
-            if (part.type === 'tool_use') {
-              const toolInput = part.input ? JSON.stringify(part.input, null, 2) : '';
-
-              // Check if this is a child tool from a subagent
-              if (parentToolUseId) {
-                setChatMessages((previous) =>
-                  previous.map((message) => {
-                    if (message.toolId === parentToolUseId && message.isSubagentContainer) {
-                      const childTool = {
-                        toolId: part.id,
-                        toolName: part.name,
-                        toolInput: part.input,
-                        toolResult: null,
-                        timestamp: new Date(),
-                      };
-                      const existingChildren = message.subagentState?.childTools || [];
-                      return {
-                        ...message,
-                        subagentState: {
-                          childTools: [...existingChildren, childTool],
-                          currentToolIndex: existingChildren.length,
-                          isComplete: false,
-                        },
-                      };
-                    }
-                    return message;
-                  }),
-                );
-                return;
-              }
-
-              // Check if this is a Task tool (subagent container)
-              const isSubagentContainer = part.name === 'Task';
-
-              setChatMessages((previous) => [
-                ...previous,
-                {
-                  type: 'assistant',
-                  content: '',
-                  timestamp: new Date(),
-                  isToolUse: true,
-                  toolName: part.name,
-                  toolInput,
-                  toolId: part.id,
-                  toolResult: null,
-                  isSubagentContainer,
-                  subagentState: isSubagentContainer
-                    ? { childTools: [], currentToolIndex: -1, isComplete: false }
-                    : undefined,
-                },
-              ]);
-              return;
-            }
-
-            if (part.type === 'text' && part.text?.trim()) {
-              let content = decodeHtmlEntities(part.text);
-              content = formatUsageLimitText(content);
-              setChatMessages((previous) => [
-                ...previous,
-                {
-                  type: 'assistant',
-                  content,
-                  timestamp: new Date(),
-                },
-              ]);
-            }
-          });
-        } else if (structuredMessageData && typeof structuredMessageData.content === 'string' && structuredMessageData.content.trim()) {
-          let content = decodeHtmlEntities(structuredMessageData.content);
-          content = formatUsageLimitText(content);
-          setChatMessages((previous) => [
-            ...previous,
-            {
-              type: 'assistant',
-              content,
-              timestamp: new Date(),
-            },
-          ]);
+        // Assistant content (legacy) — only for assistant role messages
+        if (!structuredMessageData || structuredMessageData.role !== 'user') {
+          handleAssistantMessage(latestMessage.data, rawStructuredData, { setChatMessages });
         }
 
-        if (structuredMessageData?.role === 'user' && Array.isArray(structuredMessageData.content)) {
-          const parentToolUseId = rawStructuredData?.parentToolUseId;
-
-          structuredMessageData.content.forEach((part: any) => {
-            if (part.type !== 'tool_result') {
-              return;
-            }
-
-            setChatMessages((previous) =>
-              previous.map((message) => {
-                // Handle child tool results (route to parent's subagentState)
-                if (parentToolUseId && message.toolId === parentToolUseId && message.isSubagentContainer) {
-                  return {
-                    ...message,
-                    subagentState: {
-                      ...message.subagentState!,
-                      childTools: message.subagentState!.childTools.map((child) => {
-                        if (child.toolId === part.tool_use_id) {
-                          return {
-                            ...child,
-                            toolResult: {
-                              content: part.content,
-                              isError: part.is_error,
-                              timestamp: new Date(),
-                            },
-                          };
-                        }
-                        return child;
-                      }),
-                    },
-                  };
-                }
-
-                // Handle normal tool results (including parent Task tool completion)
-                if (message.isToolUse && message.toolId === part.tool_use_id) {
-                  const result = {
-                    ...message,
-                    toolResult: {
-                      content: part.content,
-                      isError: part.is_error,
-                      timestamp: new Date(),
-                    },
-                  };
-                  // Mark subagent as complete when parent Task receives its result
-                  if (message.isSubagentContainer && message.subagentState) {
-                    result.subagentState = {
-                      ...message.subagentState,
-                      isComplete: true,
-                    };
-                  }
-                  return result;
-                }
-                return message;
-              }),
-            );
-          });
+        // Tool results (legacy) — only for user role messages
+        if (structuredMessageData?.role === 'user') {
+          handleToolResult(latestMessage.data, rawStructuredData, { setChatMessages });
         }
+
         break;
       }
 
@@ -532,7 +507,7 @@ export function useChatRealtimeHandlers({
               streamBufferRef.current = '';
               streamTimerRef.current = null;
               appendStreamingChunk(setChatMessages, chunk, true);
-            }, 100);
+            }, STREAM_FLUSH_INTERVAL_MS);
           }
         }
         break;
@@ -1185,4 +1160,6 @@ export function useChatRealtimeHandlers({
     onReplaceTemporarySession,
     onNavigateToSession,
   ]);
+
+  return { costInfo, rateLimitState, agentStatusState };
 }
