@@ -48,6 +48,15 @@ const saveCommandHistory = (projectName: string, history: Record<string, number>
 const isPromiseLike = (value: unknown): value is Promise<unknown> =>
   Boolean(value) && typeof (value as Promise<unknown>).then === 'function';
 
+// Built-in client-side commands (not from backend)
+const builtInCommands: SlashCommand[] = [
+  {
+    name: 'yolo',
+    description: 'Toggle YOLO mode (bypass all permissions)',
+    type: 'builtin',
+  },
+];
+
 export function useSlashCommands({
   selectedProject,
   input,
@@ -104,6 +113,7 @@ export function useSlashCommands({
 
         const data = await response.json();
         const allCommands: SlashCommand[] = [
+          ...builtInCommands,
           ...((data.builtIn || []) as SlashCommand[]).map((command) => ({
             ...command,
             type: 'built-in',

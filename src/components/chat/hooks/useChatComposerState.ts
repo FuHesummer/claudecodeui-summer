@@ -35,6 +35,7 @@ interface UseChatComposerStateArgs {
   currentSessionId: string | null;
   provider: SessionProvider;
   permissionMode: PermissionMode | string;
+  setPermissionMode: Dispatch<SetStateAction<PermissionMode>>;
   cyclePermissionMode: () => void;
   cursorModel: string;
   claudeModel: string;
@@ -88,6 +89,7 @@ export function useChatComposerState({
   currentSessionId,
   provider,
   permissionMode,
+  setPermissionMode,
   cyclePermissionMode,
   cursorModel,
   claudeModel,
@@ -275,6 +277,27 @@ export function useChatComposerState({
   const executeCommand = useCallback(
     async (command: SlashCommand, rawInput?: string) => {
       if (!command || !selectedProject) {
+        return;
+      }
+
+      // Handle built-in client-side commands
+      if (command.name === 'yolo') {
+        const nextMode = permissionMode === 'bypassPermissions' ? 'default' : 'bypassPermissions';
+        setPermissionMode(nextMode);
+        if (selectedSession?.id) {
+          localStorage.setItem(`permissionMode-${selectedSession.id}`, nextMode);
+        }
+        // Add confirmation message to chat
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            type: 'assistant',
+            content: nextMode === 'bypassPermissions'
+              ? '⚡ YOLO mode enabled — all permissions auto-approved'
+              : '🛡 YOLO mode disabled — permissions will be prompted',
+            timestamp: new Date(),
+          },
+        ]);
         return;
       }
 

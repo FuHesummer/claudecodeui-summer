@@ -56,6 +56,36 @@
     --nav-input-bg: 210 40% 96.1% / 0.5;
     --nav-input-focus-ring: 221.2 83.2% 53.3% / 0.22;
 
+    /* Chat spacing */
+    --chat-gap-messages: 8px;
+    --chat-padding-message: 12px;
+    --chat-indent-subagent: 16px;
+
+    /* Chat radii */
+    --chat-radius-message: 8px;
+    --chat-radius-tool: 6px;
+    --chat-radius-code: 6px;
+
+    /* Chat transitions */
+    --chat-transition-expand: 200ms ease-out;
+    --chat-transition-fade: 150ms ease-in;
+
+    /* Tool status colors */
+    --tool-success: 142 71% 45%;
+    --tool-pending: 48 96% 53%;
+    --tool-error: 0 84.2% 60.2%;
+    --tool-running: 221.2 83.2% 53.3%;
+
+    /* Subagent */
+    --subagent-border: 270 60% 60%;
+    --subagent-bg: 270 60% 98%;
+
+    /* Context indicator */
+    --context-green: 142 71% 45%;
+    --context-yellow: 48 96% 53%;
+    --context-orange: 25 95% 53%;
+    --context-red: 0 84% 60%;
+
     /* Safe area CSS variables */
     --safe-area-inset-top: env(safe-area-inset-top);
     --safe-area-inset-right: env(safe-area-inset-right);
@@ -116,6 +146,20 @@
     --nav-divider-color: 217.2 32.6% 17.5% / 0.5;
     --nav-input-bg: 217.2 32.6% 17.5% / 0.5;
     --nav-input-focus-ring: 217.2 91.2% 59.8% / 0.25;
+
+    /* Chat dark overrides */
+    --tool-success: 142 71% 40%;
+    --tool-pending: 48 80% 50%;
+    --tool-error: 0 62.8% 30.6%;
+    --tool-running: 217.2 91.2% 59.8%;
+
+    --subagent-border: 270 50% 55%;
+    --subagent-bg: 270 30% 12%;
+
+    --context-green: 142 60% 40%;
+    --context-yellow: 48 80% 48%;
+    --context-orange: 25 80% 48%;
+    --context-red: 0 70% 50%;
   }
 }
 

@@ -118,6 +118,27 @@ function ClaudePermissions({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">
+          {t('agents.defaultPermissionMode', { defaultValue: 'Default Permission Mode' })}
+        </label>
+        <select
+          value={localStorage.getItem('defaultPermissionMode') || 'bypassPermissions'}
+          onChange={(e) => {
+            localStorage.setItem('defaultPermissionMode', e.target.value);
+          }}
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        >
+          <option value="default">Default (Prompt for permissions)</option>
+          <option value="acceptEdits">Accept Edits</option>
+          <option value="bypassPermissions">Bypass Permissions (YOLO)</option>
+          <option value="plan">Plan Mode</option>
+        </select>
+        <p className="text-xs text-muted-foreground">
+          {t('agents.defaultPermissionModeDesc', { defaultValue: 'Permission mode used for new sessions. Can be overridden per session.' })}
+        </p>
+      </div>
+
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-green-500" />

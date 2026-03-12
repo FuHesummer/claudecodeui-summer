@@ -48,11 +48,21 @@ export interface ChatMessage {
     taskId?: string;                 // SDK task_id for matching progress messages
     description?: string;            // Agent task description
     progressLog?: string[];          // Agent real-time progress text
+    elapsedMs?: number;              // Subagent elapsed time
+    modelName?: string;              // Model used by subagent
+    toolCount?: number;              // Number of tools used by subagent
   };
   // Real-time rendering fields
   toolProgress?: string[];         // Tool execution intermediate output
   isToolStarted?: boolean;         // content_block_start received, awaiting params/result
   thinkingDurationMs?: number;     // How long thinking took
+  // VS Code alignment fields
+  isHookEvent?: boolean;           // Message represents a hook event
+  hookName?: string;               // Name of the hook (e.g. PreToolUse, PostToolUse)
+  isCompactBoundary?: boolean;     // Compact boundary divider
+  isStatusInline?: boolean;        // Inline status text (reading file..., searching...)
+  isStale?: boolean;               // Message superseded by newer content
+  modelName?: string;              // Model name for message header display
   [key: string]: unknown;
 }
 

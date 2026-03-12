@@ -157,7 +157,8 @@
     "clickToChangeMode": "Click to change permission mode (or press Tab in input)",
     "showAllCommands": "Show all commands",
     "clearInput": "Clear input",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "yoloTooltip": "All tool permissions auto-approved. Equivalent to --dangerously-skip-permissions"
   },
   "thinkingMode": {
     "selector": {

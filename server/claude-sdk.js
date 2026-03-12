@@ -175,6 +175,12 @@ function mapCliOptionsToSDK(options = {}) {
     sdkOptions.permissionMode = 'bypassPermissions';
   }
 
+  // Also set IS_SANDBOX when frontend explicitly sends bypassPermissions mode
+  if (permissionMode === 'bypassPermissions') {
+    process.env.IS_SANDBOX = '1';
+    sdkOptions.permissionMode = 'bypassPermissions';
+  }
+
   let allowedTools = [...(settings.allowedTools || [])];
 
   // Add plan mode default tools

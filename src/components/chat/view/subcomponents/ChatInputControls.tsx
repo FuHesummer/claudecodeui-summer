@@ -42,6 +42,17 @@ export default function ChatInputControls({
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      {permissionMode === 'bypassPermissions' && (
+        <button
+          type="button"
+          onClick={onModeSwitch}
+          className="flex items-center gap-1 rounded-md bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50"
+          title={t('input.yoloTooltip', { defaultValue: 'All tool permissions auto-approved. Equivalent to --dangerously-skip-permissions' })}
+        >
+          <span>⚡</span>
+          <span>YOLO</span>
+        </button>
+      )}
       <button
         type="button"
         onClick={onModeSwitch}
