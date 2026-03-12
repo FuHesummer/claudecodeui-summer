@@ -1,5 +1,5 @@
 {
-  "name": "@siteboon/claude-code-ui",
+  "name": "@fuhesummer/claude-code-ui",
   "version": "1.25.0",
   "description": "A web-based UI for Claude Code CLI",
   "type": "module",
@@ -15,13 +15,13 @@
     "scripts/",
     "README.md"
   ],
-  "homepage": "https://cloudcli.ai",
+  "homepage": "https://github.com/FuHesummer/claudecodeui-summer#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/siteboon/claudecodeui.git"
+    "url": "git+https://github.com/FuHesummer/claudecodeui-summer.git"
   },
   "bugs": {
-    "url": "https://github.com/siteboon/claudecodeui/issues"
+    "url": "https://github.com/FuHesummer/claudecodeui-summer/issues"
   },
   "scripts": {
     "dev": "concurrently --kill-others \"npm run server\" \"npm run client\"",
@@ -47,6 +47,9 @@
   ],
   "author": "CloudCLI UI Contributors",
   "license": "GPL-3.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.59",
     "@codemirror/lang-css": "^6.3.1",
