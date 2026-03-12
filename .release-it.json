@@ -6,11 +6,12 @@
     "requireCleanWorkingDir": true
   },
   "npm": {
-    "publish": true
+    "publish": true,
+    "publishArgs": ["--access", "public"]
   },
   "github": {
     "release": true,
-    "releaseName": "CloudCLI UI v${version}"
+    "releaseName": "Claude Code UI Summer v${version}"
   },
   "hooks": {
     "before:init": ["npm run build"]
@@ -18,7 +19,7 @@
   "plugins": {
     "@release-it/conventional-changelog": {
       "infile": "CHANGELOG.md",
-      "header": "# Changelog\n\nAll notable changes to CloudCLI UI will be documented in this file.\n",
+      "header": "# Changelog\n\nAll notable changes to Claude Code UI Summer Edition will be documented in this file.\n",
       "preset": {
         "name": "conventionalcommits",
         "types": [
