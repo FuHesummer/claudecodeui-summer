@@ -123,6 +123,16 @@ git fetch upstream
 git cherry-pick <commit-hash>
 ```
 
+### PM2 Background Service (Production)
+
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.cjs
+pm2 startup && pm2 save  # auto-start on boot
+```
+
+> This fork includes `ecosystem.config.cjs` with `WORKSPACES_ROOT` environment variable pre-configured.
+
 
 ---
 
