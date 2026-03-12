@@ -46,7 +46,22 @@ jobs:
         run: npm run typecheck
 
       - name: Release
-        run: npx release-it --ci --verbose
+        run: |
+          echo "=== NPM auth check ==="
+          npm whoami
+          echo "=== npm config list ==="
+          npm config list
+          echo "=== Running release-it ==="
+          npx release-it --ci --verbose 2>&1 || {
+            echo "=== release-it failed, checking npm auth again ==="
+            npm whoami
+            echo "=== Checking .npmrc files ==="
+            echo "Project .npmrc:"
+            cat .npmrc 2>/dev/null | sed 's/_authToken=.*/_authToken=***REDACTED***/' || echo "No project .npmrc"
+            echo "Home .npmrc:"
+            cat ~/.npmrc 2>/dev/null | sed 's/_authToken=.*/_authToken=***REDACTED***/' || echo "No home .npmrc"
+            exit 1
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
