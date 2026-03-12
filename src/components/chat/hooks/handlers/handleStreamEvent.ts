@@ -160,7 +160,8 @@ export function handleStreamEvent(
         }
         // Finalize thinking block
         if (last && last.isThinking && last.isStreaming) {
-          updated[lastIndex] = { ...last, isStreaming: false };
+          const durationMs = last.timestamp ? Date.now() - new Date(last.timestamp).getTime() : undefined;
+          updated[lastIndex] = { ...last, isStreaming: false, thinkingDurationMs: durationMs };
         }
         return updated;
       });

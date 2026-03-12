@@ -368,6 +368,17 @@ export function useChatRealtimeHandlers({
 
             case 'status':
               handleStatusMessage(latestMessage.data, { setAgentStatusState });
+              // Also feed SDK status text into the existing ClaudeStatus UI
+              if (latestMessage.data) {
+                const statusText = latestMessage.data.message || latestMessage.data.status;
+                if (statusText) {
+                  setClaudeStatus({
+                    text: String(statusText),
+                    tokens: 0,
+                    can_interrupt: true,
+                  });
+                }
+              }
               break;
 
             case 'rate_limit':

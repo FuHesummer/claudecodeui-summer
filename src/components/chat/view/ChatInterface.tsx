@@ -9,6 +9,7 @@ import { useChatRealtimeHandlers } from '../hooks/useChatRealtimeHandlers';
 import { useChatComposerState } from '../hooks/useChatComposerState';
 import ChatMessagesPane from './subcomponents/ChatMessagesPane';
 import ChatComposer from './subcomponents/ChatComposer';
+import RateLimitBanner from './subcomponents/RateLimitBanner';
 
 
 type PendingViewSession = {
@@ -215,7 +216,7 @@ function ChatInterface({
     setCanAbortSession(false);
   }, [selectedProject, selectedSession, loadSessionMessages, setChatMessages, setIsLoading, setCanAbortSession]);
 
-  useChatRealtimeHandlers({
+  const { costInfo, rateLimitState, agentStatusState } = useChatRealtimeHandlers({
     latestMessage,
     provider,
     selectedProject,
@@ -292,6 +293,7 @@ function ChatInterface({
 
   return (
     <>
+      <RateLimitBanner rateLimitState={rateLimitState} />
       <div className="flex h-full flex-col">
         <ChatMessagesPane
           scrollContainerRef={scrollContainerRef}
@@ -407,6 +409,7 @@ function ChatInterface({
           isTextareaExpanded={isTextareaExpanded}
           sendByCtrlEnter={sendByCtrlEnter}
           onTranscript={handleTranscript}
+          costInfo={costInfo}
         />
       </div>
 
