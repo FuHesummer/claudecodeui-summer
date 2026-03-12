@@ -38,6 +38,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
       - name: Release
         run: npx release-it --ci
         env:
