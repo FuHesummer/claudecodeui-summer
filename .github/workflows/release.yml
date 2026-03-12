@@ -15,6 +15,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,7 +44,19 @@ jobs:
         run: npm run typecheck
 
       - name: Release
-        run: npx release-it --ci
+        run: |
+          npx release-it --ci 2>&1 || {
+            echo ""
+            echo "=== RELEASE-IT FAILED ==="
+            echo "Checking if this is a git push permission issue..."
+            echo "Remote URL:"
+            git remote -v
+            echo "Git status:"
+            git status
+            echo "npm whoami:"
+            npm whoami 2>&1 || echo "npm whoami failed"
+            exit 1
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
