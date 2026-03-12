@@ -1,0 +1,46 @@
+name: Beta Publish
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  beta-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Set beta version
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          BETA_VERSION="${BASE_VERSION}-beta.${{ github.run_number }}"
+          npm version "$BETA_VERSION" --no-git-tag-version
+          echo "Publishing version: $BETA_VERSION"
+
+      - name: Publish beta
+        run: npm publish --tag beta --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
