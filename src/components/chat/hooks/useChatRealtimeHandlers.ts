@@ -15,6 +15,8 @@ import {
   handleRateLimit,
   handleResult,
   handleLegacyMessage,
+  handleHookEvent,
+  handleCompactBoundary,
 } from './handlers';
 
 type PendingViewSession = {
@@ -68,6 +70,7 @@ const appendStreamingChunk = (
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>,
   chunk: string,
   newline = false,
+  modelName?: string | null,
 ) => {
   if (!chunk) {
     return;
@@ -86,7 +89,7 @@ const appendStreamingChunk = (
       // Clone the message instead of mutating in place so React can reliably detect state updates.
       updated[lastIndex] = { ...last, content: nextContent };
     } else {
-      updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true });
+      updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true, modelName: modelName || undefined });
     }
     return updated;
   });
@@ -130,6 +133,8 @@ export function useChatRealtimeHandlers({
   onWebSocketReconnect,
 }: UseChatRealtimeHandlersArgs) {
   const lastProcessedMessageRef = useRef<LatestChatMessage | null>(null);
+  const currentModelRef = useRef<string | null>(null);
+  const usageRef = useRef<{ inputTokens?: number; outputTokens?: number } | null>(null);
   const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
   const [rateLimitState, setRateLimitState] = useState<RateLimitState | null>(null);
   const [agentStatusState, setAgentStatusState] = useState<AgentStatusState | null>(null);
@@ -338,11 +343,11 @@ export function useChatRealtimeHandlers({
             case 'stream_event':
               handleStreamEvent(
                 latestMessage.data,
-                { streamBufferRef, streamTimerRef },
+                { streamBufferRef, streamTimerRef, currentModelRef, usageRef },
                 {
                   setChatMessages,
-                  appendStreamingChunk: (chunk: string, newline?: boolean) =>
-                    appendStreamingChunk(setChatMessages, chunk, newline),
+                  appendStreamingChunk: (chunk: string, newline?: boolean, modelName?: string | null) =>
+                    appendStreamingChunk(setChatMessages, chunk, newline, modelName || currentModelRef.current),
                   finalizeStreamingMessage: () => finalizeStreamingMessage(setChatMessages),
                 },
               );
@@ -367,7 +372,7 @@ export function useChatRealtimeHandlers({
               break;
 
             case 'status':
-              handleStatusMessage(latestMessage.data, { setAgentStatusState });
+              handleStatusMessage(latestMessage.data, { setAgentStatusState, setChatMessages });
               // Also feed SDK status text into the existing ClaudeStatus UI
               if (latestMessage.data) {
                 const statusText = latestMessage.data.message || latestMessage.data.status;
@@ -386,16 +391,24 @@ export function useChatRealtimeHandlers({
               break;
 
             case 'result':
+              // Merge any usage from message_delta into result data
+              if (usageRef.current) {
+                latestMessage.data = {
+                  ...latestMessage.data,
+                  _streamUsage: usageRef.current,
+                };
+                usageRef.current = null;
+              }
               handleResult(latestMessage.data, { setTokenBudget, setCostInfo });
               break;
 
             case 'hook_started':
             case 'hook_progress':
-              console.debug(`[hook] ${subType}`, latestMessage.data);
+              handleHookEvent(latestMessage.data, subType, { setChatMessages });
               break;
 
             case 'compact_boundary':
-              console.debug('[compact_boundary]', latestMessage.data);
+              handleCompactBoundary(latestMessage.data, { setChatMessages });
               break;
 
             case 'system': {

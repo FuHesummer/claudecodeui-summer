@@ -40,6 +40,16 @@ export function handleResult(
         model: modelKey,
       });
     }
+  } else if (resultData._streamUsage) {
+    // Fallback: use usage stats captured from message_delta stream events
+    const streamUsage = resultData._streamUsage;
+    setCostInfo({
+      totalCostUsd: typeof totalCostUsd === 'number' ? totalCostUsd : undefined,
+      inputTokens: streamUsage.inputTokens || 0,
+      outputTokens: streamUsage.outputTokens || 0,
+      durationMs: typeof durationMs === 'number' ? durationMs : undefined,
+      model: undefined,
+    });
   }
 
   // NOTE: token budget extraction is still handled in the main for-await loop

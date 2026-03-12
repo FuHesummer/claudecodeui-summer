@@ -7,3 +7,5 @@ export { handleStatusMessage } from './handleStatusMessage';
 export { handleRateLimit } from './handleRateLimit';
 export { handleResult } from './handleResult';
 export { handleLegacyMessage } from './handleLegacyMessage';
+export { handleHookEvent } from './handleHookEvent';
+export { handleCompactBoundary } from './handleCompactBoundary';

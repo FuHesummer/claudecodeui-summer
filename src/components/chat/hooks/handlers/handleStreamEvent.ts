@@ -8,11 +8,13 @@ export const STREAM_FLUSH_INTERVAL_MS = 33;
 interface StreamState {
   streamBufferRef: MutableRefObject<string>;
   streamTimerRef: MutableRefObject<number | null>;
+  currentModelRef?: MutableRefObject<string | null>;
+  usageRef?: MutableRefObject<{ inputTokens?: number; outputTokens?: number } | null>;
 }
 
 interface StreamActions {
   setChatMessages: Dispatch<SetStateAction<ChatMessage[]>>;
-  appendStreamingChunk: (chunk: string, newline?: boolean) => void;
+  appendStreamingChunk: (chunk: string, newline?: boolean, modelName?: string | null) => void;
   finalizeStreamingMessage: () => void;
 }
 
@@ -99,6 +101,7 @@ export function handleStreamEvent(
             timestamp: new Date(),
             isThinking: true,
             isStreaming: true,
+            modelName: streamState.currentModelRef?.current || undefined,
           },
         ]);
         return;
@@ -119,6 +122,7 @@ export function handleStreamEvent(
             toolInput: '',
             toolResult: null,
             isSubagentContainer: contentBlock.name === 'Task',
+            modelName: streamState.currentModelRef?.current || undefined,
             subagentState: contentBlock.name === 'Task'
               ? { childTools: [], currentToolIndex: -1, isComplete: false }
               : undefined,
@@ -169,14 +173,23 @@ export function handleStreamEvent(
     }
 
     case 'message_start': {
-      // Extract model info if available — store as debug metadata
-      console.debug('[message_start]', messageData.message?.model);
+      const model = messageData.message?.model || messageData.model;
+      if (model && streamState.currentModelRef) {
+        streamState.currentModelRef.current = String(model);
+      }
+      console.debug('[message_start] model:', model);
       break;
     }
 
     case 'message_delta': {
-      // Extract stop_reason, usage stats
-      console.debug('[message_delta]', messageData.delta?.stop_reason, messageData.usage);
+      const usage = messageData.usage;
+      if (usage && streamState.usageRef) {
+        streamState.usageRef.current = {
+          inputTokens: usage.input_tokens,
+          outputTokens: usage.output_tokens,
+        };
+      }
+      console.debug('[message_delta]', messageData.delta?.stop_reason, usage);
       break;
     }
 
