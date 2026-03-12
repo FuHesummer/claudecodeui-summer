@@ -21,7 +21,12 @@ jobs:
       - name: Configure npm auth
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "Token length: ${#NPM_TOKEN}"
+          echo "Token prefix: ${NPM_TOKEN:0:4}"
+          cat ~/.npmrc | sed 's/=.*/=***REDACTED***/'
           npm whoami
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
