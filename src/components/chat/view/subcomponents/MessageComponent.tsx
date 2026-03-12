@@ -13,6 +13,7 @@ import type { Project } from '../../../../types/app';
 import { ToolRenderer, shouldHideToolResult } from '../../tools';
 import { Markdown } from './Markdown';
 import MessageCopyControl from './MessageCopyControl';
+import ThinkingStreamBlock from './ThinkingStreamBlock';
 
 type DiffLine = {
   type: string;
@@ -191,6 +192,12 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                   </div>
                 </div>
 
+                {message.isToolStarted && !message.toolResult && (
+                  <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
+                    <span>{t('tool.started', { toolName: message.toolName || 'Tool', defaultValue: `Starting ${message.toolName || 'Tool'}...` })}</span>
+                  </div>
+                )}
                 {message.toolInput && (
                   <ToolRenderer
                     toolName={message.toolName || 'UnknownTool'}
@@ -204,6 +211,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                     autoExpandTools={autoExpandTools}
                     showRawParameters={showRawParameters}
                     rawToolInput={typeof message.toolInput === 'string' ? message.toolInput : undefined}
+                    toolProgress={message.toolProgress}
                     isSubagentContainer={message.isSubagentContainer}
                     subagentState={message.subagentState}
                   />
@@ -378,22 +386,12 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                 </div>
               </div>
             ) : message.isThinking ? (
-              /* Thinking messages - collapsible by default */
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                <details className="group">
-                  <summary className="flex cursor-pointer items-center gap-2 font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <svg className="h-3 w-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span>{t('thinking.emoji')}</span>
-                  </summary>
-                  <div className="mt-2 border-l-2 border-gray-300 pl-4 text-sm text-gray-600 dark:border-gray-600 dark:text-gray-400">
-                    <Markdown className="prose prose-sm prose-gray max-w-none dark:prose-invert">
-                      {message.content}
-                    </Markdown>
-                  </div>
-                </details>
-              </div>
+              /* Thinking messages - streaming or static */
+              <ThinkingStreamBlock
+                content={message.content || ''}
+                isStreaming={!!message.isStreaming}
+                durationMs={message.thinkingDurationMs}
+              />
             ) : (
               <div className="text-sm text-gray-700 dark:text-gray-300">
                 {/* Thinking accordion for reasoning */}

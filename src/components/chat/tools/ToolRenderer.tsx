@@ -3,6 +3,7 @@ import type { Project } from '../../../types/app';
 import type { SubagentChildTool } from '../types/types';
 import { getToolConfig } from './configs/toolConfigs';
 import { OneLineDisplay, CollapsibleDisplay, ToolDiffViewer, MarkdownContent, FileListContent, TodoListContent, TaskListContent, TextContent, QuestionAnswerContent, SubagentContainer } from './components';
+import ToolProgressDisplay from './components/ToolProgressDisplay';
 
 type DiffLine = {
   type: string;
@@ -22,6 +23,7 @@ interface ToolRendererProps {
   autoExpandTools?: boolean;
   showRawParameters?: boolean;
   rawToolInput?: string;
+  toolProgress?: string[];
   isSubagentContainer?: boolean;
   subagentState?: {
     childTools: SubagentChildTool[];
@@ -58,6 +60,7 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
   autoExpandTools = false,
   showRawParameters = false,
   rawToolInput,
+  toolProgress,
   isSubagentContainer,
   subagentState
 }) => {
@@ -96,26 +99,34 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
 
   if (!displayConfig) return null;
 
+  // Tool progress indicator (shown during execution, before result arrives)
+  const progressDisplay = toolProgress && toolProgress.length > 0 && !toolResult && mode === 'input'
+    ? <ToolProgressDisplay progress={toolProgress} />
+    : null;
+
   if (displayConfig.type === 'one-line') {
     const value = displayConfig.getValue?.(parsedData) || '';
     const secondary = displayConfig.getSecondary?.(parsedData);
 
     return (
-      <OneLineDisplay
-        toolName={toolName}
-        toolResult={toolResult}
-        toolId={toolId}
-        icon={displayConfig.icon}
-        label={displayConfig.label}
-        value={value}
-        secondary={secondary}
-        action={displayConfig.action}
-        onAction={handleAction}
-        style={displayConfig.style}
-        wrapText={displayConfig.wrapText}
-        colorScheme={displayConfig.colorScheme}
-        resultId={mode === 'input' ? `tool-result-${toolId}` : undefined}
-      />
+      <>
+        <OneLineDisplay
+          toolName={toolName}
+          toolResult={toolResult}
+          toolId={toolId}
+          icon={displayConfig.icon}
+          label={displayConfig.label}
+          value={value}
+          secondary={secondary}
+          action={displayConfig.action}
+          onAction={handleAction}
+          style={displayConfig.style}
+          wrapText={displayConfig.wrapText}
+          colorScheme={displayConfig.colorScheme}
+          resultId={mode === 'input' ? `tool-result-${toolId}` : undefined}
+        />
+        {progressDisplay}
+      </>
     );
   }
 
@@ -220,18 +231,21 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
       : undefined;
 
     return (
-      <CollapsibleDisplay
-        toolName={toolName}
-        toolId={toolId}
-        title={title}
-        defaultOpen={defaultOpen}
-        onTitleClick={handleTitleClick}
-        showRawParameters={mode === 'input' && showRawParameters}
-        rawContent={rawToolInput}
-        toolCategory={getToolCategory(toolName)}
-      >
-        {contentComponent}
-      </CollapsibleDisplay>
+      <>
+        <CollapsibleDisplay
+          toolName={toolName}
+          toolId={toolId}
+          title={title}
+          defaultOpen={defaultOpen}
+          onTitleClick={handleTitleClick}
+          showRawParameters={mode === 'input' && showRawParameters}
+          rawContent={rawToolInput}
+          toolCategory={getToolCategory(toolName)}
+        >
+          {contentComponent}
+        </CollapsibleDisplay>
+        {progressDisplay}
+      </>
     );
   }
 
