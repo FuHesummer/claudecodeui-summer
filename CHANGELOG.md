@@ -1,5 +1,74 @@
 # Changelog
 
+All notable changes to Claude Code UI Summer Edition will be documented in this file.
+
+
+## 1.26.0 (2026-03-12)
+
+### New Features
+
+* **chat:** add handleStreamEvent handler for real-time stream processing ([daabb32](https://github.com/FuHesummer/claudecodeui-summer/commit/daabb32bf513dfd755c37aecc7b4115f0acfbdeb))
+* **chat:** wire RateLimitBanner, thinkingDuration, agentStatus into UI ([50cd748](https://github.com/FuHesummer/claudecodeui-summer/commit/50cd7483d4ad523e1d93a475729e174bd9775210))
+* **handlers:** add handleResult with cost info and handleLegacyMessage fallback ([e754bff](https://github.com/FuHesummer/claudecodeui-summer/commit/e754bff82e67cf48d75f5bf041f1480630bb00d7))
+* **handlers:** add handleToolProgress, handleTaskLifecycle, handleStatusMessage, handleRateLimit ([fcc8e96](https://github.com/FuHesummer/claudecodeui-summer/commit/fcc8e9653294fd1de8763a0ec7b3e4bd0c5e36c8))
+* **handlers:** extract handleAssistantMessage from monolith ([b8a80a2](https://github.com/FuHesummer/claudecodeui-summer/commit/b8a80a2dc983600ab90716f4ba4e958244c69cfd))
+* **handlers:** extract handleToolResult from monolith ([316de13](https://github.com/FuHesummer/claudecodeui-summer/commit/316de135fe784a16eaffc8fb8f78d946aa7904a0))
+* **i18n:** add realtime message rendering i18n keys for all 5 languages ([625bee2](https://github.com/FuHesummer/claudecodeui-summer/commit/625bee226442d1eb09879cfb68ed9105d7f6f1fa))
+* initialize from upstream siteboon/claudecodeui ([3bd6ad8](https://github.com/FuHesummer/claudecodeui-summer/commit/3bd6ad8aeaa0e11e45ba4a3784221713abfad2dd))
+* **sdk:** add classifySDKMessage() and subType tag to claude-response messages ([51eb3ea](https://github.com/FuHesummer/claudecodeui-summer/commit/51eb3eabb967b339e3c761430b50f52a9ba232d5))
+* **types:** add ChatMessage fields and CostInfo/RateLimitState/AgentStatusState types ([fb77285](https://github.com/FuHesummer/claudecodeui-summer/commit/fb772850d94a854737760380eb0e3201a3fcbb88))
+* **ui:** add taskId matching and progressLog to SubagentContainer ([6a3aa02](https://github.com/FuHesummer/claudecodeui-summer/commit/6a3aa02d299129e876d6cb7339c014964513a1fd))
+* **ui:** add ThinkingStreamBlock component with streaming support ([81f434d](https://github.com/FuHesummer/claudecodeui-summer/commit/81f434d0677f537d207c011ae95595af63d085f1))
+* **ui:** add ToolProgressDisplay, RateLimitBanner, and CostInfoBar ([b7e77e8](https://github.com/FuHesummer/claudecodeui-summer/commit/b7e77e86e462734f2f984046b879796eddb6bf8f))
+* **ui:** integrate ThinkingStreamBlock and ToolProgressDisplay ([814dd98](https://github.com/FuHesummer/claudecodeui-summer/commit/814dd98b8bd7c2681bad1144fceff35f60bed5dc))
+* **ui:** wire CostInfoBar into ChatInputControls via ChatComposer ([3a31647](https://github.com/FuHesummer/claudecodeui-summer/commit/3a31647bec703a96a885868009806b60fd1ce294))
+
+### Bug Fixes
+
+* **ci:** add comprehensive npm auth diagnostics to Release step ([c90b8d9](https://github.com/FuHesummer/claudecodeui-summer/commit/c90b8d93a1380c4840fd5e9abb66b6bbce558e15))
+* **ci:** add explicit npm auth step for release-it ([359f8a3](https://github.com/FuHesummer/claudecodeui-summer/commit/359f8a36dac7a75e93b9f67cf29d8e69a33f445e))
+* **ci:** add GITHUB_TOKEN to checkout for git push, add error diagnostics ([d821ab2](https://github.com/FuHesummer/claudecodeui-summer/commit/d821ab2ca0e1c9c2eae8eb82437c37ae6b90981e))
+* **ci:** add npm auth debug output to diagnose token issues ([b69af97](https://github.com/FuHesummer/claudecodeui-summer/commit/b69af970bcbfe78d4c3dedf8d5da84c9d742c8dd))
+* **ci:** pass NPM_TOKEN env to release-it step ([c64ec15](https://github.com/FuHesummer/claudecodeui-summer/commit/c64ec1576d0d3ddfc8d53fb701df7b2925385598))
+* **ci:** relax requireCleanWorkingDir, add release-it verbose mode ([6c09cce](https://github.com/FuHesummer/claudecodeui-summer/commit/6c09cced7d77a6701f7628596fd437a96be96e99))
+* **ci:** remove actions/setup-node registry-url, write npmrc directly ([7088794](https://github.com/FuHesummer/claudecodeui-summer/commit/70887947418364b7fa12d1b6564bc12f5e808fb4))
+* **ci:** skip release-it npm pre-checks for first publish ([6ac18ae](https://github.com/FuHesummer/claudecodeui-summer/commit/6ac18ae1e43284ef9d68067099a563e57f332890))
+* **ci:** write npm auth to NPM_CONFIG_USERCONFIG path ([bd71ece](https://github.com/FuHesummer/claudecodeui-summer/commit/bd71ece1027b229166c787ae29090d17ca21527c))
+* **docs:** address 10 spec review issues in realtime rendering design ([afeab5c](https://github.com/FuHesummer/claudecodeui-summer/commit/afeab5c661c619ce448751af8199ab7734ac0f4f))
+* **security:** disable executable gray-matter frontmatter in commands ([c99f171](https://github.com/FuHesummer/claudecodeui-summer/commit/c99f1715392e6ef78f48e1d09913d5b21b9f272c))
+
+### Refactoring
+
+* **chat:** convert useChatRealtimeHandlers to subType-based routing ([ac194cc](https://github.com/FuHesummer/claudecodeui-summer/commit/ac194cc22d4689a0be626b9f39d657e603f9a919))
+
+### Documentation
+
+* add npm publishing pipeline spec and plan ([2bf58ec](https://github.com/FuHesummer/claudecodeui-summer/commit/2bf58ecb1dbee72fc025b0604303f3771f4e74c5))
+* add PM2 deployment section to README.md ([29eb07c](https://github.com/FuHesummer/claudecodeui-summer/commit/29eb07c44d90650fdd00d51260bc0553bf5696d4))
+* add real-time message rendering design spec ([85cd996](https://github.com/FuHesummer/claudecodeui-summer/commit/85cd9966e4dac7f3c66927285d1a9f04a7b06717))
+* add realtime message rendering design plan ([fdf191c](https://github.com/FuHesummer/claudecodeui-summer/commit/fdf191c2db896ba73397a214aa21439b28bbf525))
+* **i18n:** update ko/ja/ru READMEs for Summer Edition fork identity ([483b776](https://github.com/FuHesummer/claudecodeui-summer/commit/483b7769fbcf3ac83764aee7517dfc2b007646bc))
+* update README for Summer Edition fork identity ([4558398](https://github.com/FuHesummer/claudecodeui-summer/commit/4558398f6fe1e92f424962ffc6528922e566da94))
+
+### Maintenance
+
+* add PM2 ecosystem config with WORKSPACES_ROOT ([df279fa](https://github.com/FuHesummer/claudecodeui-summer/commit/df279fa638c419a909a55444a76d302cdac5d604))
+* change npm scope from [@fuhesummer](https://github.com/fuhesummer) to [@ccui-summer](https://github.com/ccui-summer) ([b3bee92](https://github.com/FuHesummer/claudecodeui-summer/commit/b3bee92ace06b3c3ec5a18cf07c2e10e2a92a63c))
+* update package identity to @fuhesummer/claude-code-ui ([b63c64d](https://github.com/FuHesummer/claudecodeui-summer/commit/b63c64d391e5eb15a4a217da55b2be4a46fa1cb3))
+* update release-it config for fork identity ([493867f](https://github.com/FuHesummer/claudecodeui-summer/commit/493867ff11b48eeeb9da9b17a397bf7ed048ddce))
+
+### CI/CD
+
+* add .npmrc for npm registry authentication ([703fd5d](https://github.com/FuHesummer/claudecodeui-summer/commit/703fd5d03cb41a1450566b211f410ad886ee4f58))
+* add beta publish workflow for dev branch ([c9f6690](https://github.com/FuHesummer/claudecodeui-summer/commit/c9f6690b13270af2163632a8d7c8f60b10996011))
+* add release publish workflow for main branch ([cc12eff](https://github.com/FuHesummer/claudecodeui-summer/commit/cc12effaf5e1e9e7141debd88698aa7b430b3315))
+* retrigger release after fixing NPM_TOKEN secret name ([0bd0001](https://github.com/FuHesummer/claudecodeui-summer/commit/0bd0001c2a28674ad5b68b4b3618084c696564a7))
+* retrigger release with automation npm token ([cccc47a](https://github.com/FuHesummer/claudecodeui-summer/commit/cccc47a81d01382f345ddc97ec6f757dda46a32f))
+* retrigger release workflow after NPM_TOKEN secret fix ([db40e3b](https://github.com/FuHesummer/claudecodeui-summer/commit/db40e3bfe3f70e0844bc8b370a8750e1b4ff3a92))
+* retrigger release workflow with org-enabled npm token ([567334f](https://github.com/FuHesummer/claudecodeui-summer/commit/567334f3e1a1e58d3be28c9b52335d62354cb190))
+
+# Changelog
+
 All notable changes to CloudCLI UI will be documented in this file.
 
 
