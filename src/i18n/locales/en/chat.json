@@ -61,7 +61,30 @@
   },
   "thinking": {
     "title": "Thinking...",
-    "emoji": "💭 Thinking..."
+    "emoji": "💭 Thinking...",
+    "streamingTitle": "Thinking...",
+    "duration": "Thought for {{seconds}}s"
+  },
+  "tool": {
+    "started": "Starting {{toolName}}...",
+    "running": "Running"
+  },
+  "agent": {
+    "started": "Agent started: {{description}}",
+    "progress": "Agent in progress...",
+    "completed": "Agent completed",
+    "failed": "Agent failed"
+  },
+  "rateLimit": {
+    "message": "Rate limited, retrying in {{seconds}}s..."
+  },
+  "cost": {
+    "label": "${{cost}} · {{duration}}s · {{model}}"
+  },
+  "status": {
+    "reading": "Reading file...",
+    "searching": "Searching codebase...",
+    "waiting": "Waiting..."
   },
   "json": {
     "response": "JSON Response"

@@ -61,7 +61,30 @@
   },
   "thinking": {
     "title": "思考中...",
-    "emoji": "💭 思考中..."
+    "emoji": "💭 思考中...",
+    "streamingTitle": "思考中...",
+    "duration": "思考了 {{seconds}} 秒"
+  },
+  "tool": {
+    "started": "正在启动 {{toolName}}...",
+    "running": "运行中"
+  },
+  "agent": {
+    "started": "代理已启动：{{description}}",
+    "progress": "代理进行中...",
+    "completed": "代理已完成",
+    "failed": "代理失败"
+  },
+  "rateLimit": {
+    "message": "速率限制，{{seconds}} 秒后重试..."
+  },
+  "cost": {
+    "label": "${{cost}} · {{duration}}秒 · {{model}}"
+  },
+  "status": {
+    "reading": "正在读取文件...",
+    "searching": "正在搜索代码库...",
+    "waiting": "等待中..."
   },
   "json": {
     "response": "JSON 响应"

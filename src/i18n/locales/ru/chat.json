@@ -61,7 +61,30 @@
   },
   "thinking": {
     "title": "Думаю...",
-    "emoji": "💭 Думаю..."
+    "emoji": "💭 Думаю...",
+    "streamingTitle": "Думаю...",
+    "duration": "Думал {{seconds}} сек."
+  },
+  "tool": {
+    "started": "Запуск {{toolName}}...",
+    "running": "Выполняется"
+  },
+  "agent": {
+    "started": "Агент запущен: {{description}}",
+    "progress": "Агент выполняется...",
+    "completed": "Агент завершён",
+    "failed": "Агент не удался"
+  },
+  "rateLimit": {
+    "message": "Ограничение скорости, повтор через {{seconds}} сек..."
+  },
+  "cost": {
+    "label": "${{cost}} · {{duration}}с · {{model}}"
+  },
+  "status": {
+    "reading": "Чтение файла...",
+    "searching": "Поиск по кодовой базе...",
+    "waiting": "Ожидание..."
   },
   "json": {
     "response": "JSON ответ"

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import { decodeHtmlEntities, formatUsageLimitText } from '../utils/chatFormatting';
+import { decodeHtmlEntities } from '../utils/chatFormatting';
 import { safeLocalStorage } from '../utils/chatStorage';
 import type { ChatMessage, CostInfo, RateLimitState, AgentStatusState, PendingPermissionRequest } from '../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../types/app';

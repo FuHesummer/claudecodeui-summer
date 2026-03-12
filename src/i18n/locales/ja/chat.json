@@ -60,7 +60,30 @@
   },
   "thinking": {
     "title": "思考中...",
-    "emoji": "💭 思考中..."
+    "emoji": "💭 思考中...",
+    "streamingTitle": "思考中...",
+    "duration": "{{seconds}}秒間思考しました"
+  },
+  "tool": {
+    "started": "{{toolName}} を開始中...",
+    "running": "実行中"
+  },
+  "agent": {
+    "started": "エージェント開始: {{description}}",
+    "progress": "エージェント処理中...",
+    "completed": "エージェント完了",
+    "failed": "エージェント失敗"
+  },
+  "rateLimit": {
+    "message": "レート制限中、{{seconds}}秒後に再試行..."
+  },
+  "cost": {
+    "label": "${{cost}} · {{duration}}秒 · {{model}}"
+  },
+  "status": {
+    "reading": "ファイルを読み込み中...",
+    "searching": "コードベースを検索中...",
+    "waiting": "待機中..."
   },
   "json": {
     "response": "JSONレスポンス"

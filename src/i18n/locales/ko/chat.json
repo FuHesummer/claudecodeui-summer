@@ -61,7 +61,30 @@
   },
   "thinking": {
     "title": "생각 중...",
-    "emoji": "💭 생각 중..."
+    "emoji": "💭 생각 중...",
+    "streamingTitle": "생각 중...",
+    "duration": "{{seconds}}초 동안 생각함"
+  },
+  "tool": {
+    "started": "{{toolName}} 시작 중...",
+    "running": "실행 중"
+  },
+  "agent": {
+    "started": "에이전트 시작: {{description}}",
+    "progress": "에이전트 진행 중...",
+    "completed": "에이전트 완료",
+    "failed": "에이전트 실패"
+  },
+  "rateLimit": {
+    "message": "속도 제한, {{seconds}}초 후 재시도..."
+  },
+  "cost": {
+    "label": "${{cost}} · {{duration}}초 · {{model}}"
+  },
+  "status": {
+    "reading": "파일 읽는 중...",
+    "searching": "코드베이스 검색 중...",
+    "waiting": "대기 중..."
   },
   "json": {
     "response": "JSON 응답"
