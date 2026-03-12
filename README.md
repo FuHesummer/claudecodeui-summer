@@ -1,21 +1,44 @@
 <div align="center">
   <img src="public/logo.svg" alt="CloudCLI UI" width="64" height="64">
-  <h1>Cloud CLI (aka Claude Code UI)</h1>
-  <p>A desktop and mobile UI for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>, <a href="https://docs.cursor.com/en/cli/overview">Cursor CLI</a>, <a href="https://developers.openai.com/codex">Codex</a>, and <a href="https://geminicli.com/">Gemini-CLI</a>.<br>Use it locally or remotely to view your active projects and sessions from everywhere.</p>
+  <h1>Claude Code UI — Summer Edition ☀️</h1>
+  <p>A community fork of <a href="https://github.com/siteboon/claudecodeui">CloudCLI / Claude Code UI</a>, focused on enhancing the <b>Claude Code</b> experience.<br>Real-time streaming, thinking visualization, tool progress, cost tracking — bringing VS Code-level rendering to the web UI.</p>
 </div>
 
 <p align="center">
-  <a href="https://cloudcli.ai">CloudCLI Cloud</a> · <a href="https://cloudcli.ai/docs">Documentation</a> · <a href="https://discord.gg/buxwujPNRE">Discord</a> · <a href="https://github.com/siteboon/claudecodeui/issues">Bug Reports</a> · <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/siteboon/claudecodeui"><img src="https://img.shields.io/badge/Upstream-siteboon%2Fclaudecodeui-blue?style=for-the-badge" alt="Upstream"></a>
+  <a href="https://github.com/FuHesummer/claudecodeui-summer"><img src="https://img.shields.io/badge/Fork-Summer_Edition-orange?style=for-the-badge" alt="Summer Fork"></a>
 </p>
 
-<p align="center">
-  <a href="https://cloudcli.ai"><img src="https://img.shields.io/badge/☁️_CloudCLI_Cloud-Try_Now-0066FF?style=for-the-badge" alt="CloudCLI Cloud"></a>
-  <a href="https://discord.gg/buxwujPNRE"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join our Discord"></a>
-  <br><br>
-  <a href="https://trendshift.io/repositories/15586" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15586" alt="siteboon%2Fclaudecodeui | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</p>
+> **Note**: This is a modified ("魔改") version. For the original project, visit [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui).
 
-<div align="right"><i><b>English</b> · <a href="./README.ru.md">Русский</a> · <a href="./README.ko.md">한국어</a> · <a href="./README.zh-CN.md">中文</a> · <a href="./README.ja.md">日本語</a></i></div>
+<div align="right"><i><b>English</b> · <a href="./README.zh-CN.md">中文</a></i></div>
+
+---
+
+## What's Different in Summer Edition
+
+This fork focuses exclusively on improving the **Claude Code** integration. The upstream project supports Claude Code, Cursor CLI, Codex, and Gemini CLI — we keep that multi-provider support intact but invest our effort into making the Claude Code experience best-in-class.
+
+### Key Enhancements
+
+| Feature | Description |
+|---|---|
+| **Real-time Stream Rendering** | SDK messages (`stream_event`, `assistant`, `tool_progress`, etc.) are parsed and rendered as they arrive, not buffered |
+| **Thinking Block Visualization** | `<Thinking>` blocks stream in real time with duration tracking (`thinkingDurationMs`) |
+| **Tool Progress Display** | Live progress bars and status text for running tools |
+| **Subagent Containers** | Nested agent tasks rendered with task ID matching and progress logs |
+| **Rate Limit Banner** | Countdown banner when API rate limits are hit |
+| **Cost Info Bar** | Per-response cost, duration, and model display in the input area |
+| **Agent Status Feed** | SDK status messages (`Reading file...`, `Searching codebase...`) displayed in real-time via ClaudeStatus |
+| **Reduced Stream Latency** | Flush interval reduced from 100ms to 33ms for smoother streaming |
+| **Security Hardening** | gray-matter frontmatter engine disabled for JS/JSON to prevent code execution |
+
+### Architecture Changes
+
+- **Backend**: SDK messages classified with `classifySDKMessage()` → `subType` tag before forwarding via WebSocket
+- **Frontend**: Monolithic `useChatRealtimeHandlers` refactored into routing entry + 9 modular handler files
+- **Types**: Extended `ChatMessage` with `isThinking`, `thinkingDurationMs`, `toolName`, `toolInput`, `progressPercentage`, `subagentId`, etc.
+- **i18n**: All new UI strings added to 5 languages (en, zh-CN, ko, ja, ru)
 
 ---
 
@@ -54,47 +77,63 @@
 
 ## Features
 
-- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agents from mobile 
+All upstream features are preserved:
+
+- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agents from mobile
 - **Interactive Chat Interface** - Built-in chat interface for seamless communication with the Agents
 - **Integrated Shell Terminal** - Direct access to the Agents CLI through built-in shell functionality
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
-- **Git Explorer** - View, stage and commit your changes. You can also switch branches 
+- **Git Explorer** - View, stage and commit your changes. You can also switch branches
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
 - **Plugin System** - Extend CloudCLI with custom plugins — add new tabs, backend services, and integrations. [Build your own →](https://github.com/cloudcli-ai/cloudcli-plugin-starter)
 - **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
 - **Model Compatibility** - Works with Claude, GPT, and Gemini model families (see [`shared/modelConstants.js`](shared/modelConstants.js) for the full list of supported models)
 
+**Summer Edition adds:**
+
+- **🔥 Real-time Message Streaming** - SDK messages rendered as they arrive (33ms flush interval)
+- **💭 Thinking Block Streaming** - Watch Claude think in real time, with duration tracking
+- **🔧 Tool Progress Display** - Live progress bars for running tools
+- **🤖 Subagent Containers** - Nested agent tasks with progress logs
+- **⏱️ Cost & Duration Tracking** - Per-response cost, model, and timing info
+- **🚦 Rate Limit Handling** - Visual countdown banner when limits are hit
+- **📡 Agent Status Feed** - Real-time status text from the SDK (Reading, Searching, etc.)
+
 
 ## Quick Start
 
-### CloudCLI Cloud (Recommended)
+### Development (from this fork)
 
-The fastest way to get started — no local setup required. Get a fully managed, containerized development environment accessible from the web, mobile app, API, or your favorite IDE.
-
-**[Get started with CloudCLI Cloud](https://cloudcli.ai)**
-
-
-### Self-Hosted (Open source)
-
-Try CloudCLI UI instantly with **npx** (requires **Node.js** v22+):
-
-```
-npx @siteboon/claude-code-ui
+```bash
+git clone https://github.com/FuHesummer/claudecodeui-summer.git
+cd claudecodeui-summer
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-Or install **globally** for regular use:
+Open `http://localhost:3001` — all your existing Claude Code sessions are discovered automatically.
 
+### Syncing with Upstream
+
+```bash
+git remote add upstream https://github.com/siteboon/claudecodeui.git
+git fetch upstream
+# Cherry-pick specific commits (merge will conflict due to unrelated histories)
+git cherry-pick <commit-hash>
 ```
-npm install -g @siteboon/claude-code-ui
-cloudcli
-```
-
-Open `http://localhost:3001` — all your existing sessions are discovered automatically.
-
-Visit the **[documentation →](https://cloudcli.ai/docs)** for more full configuration options, PM2, remote server setup and more
 
 
 ---
+
+## Upstream Compatibility
+
+This fork is based on **CloudCLI / Claude Code UI v1.25.0** (commit `621853c`). We track upstream via cherry-pick (not merge, due to unrelated git histories). Security patches and critical fixes are regularly pulled in.
+
+| Upstream Version | Status |
+|---|---|
+| v1.25.0 | ✅ Base fork |
+| v1.25.2 | ✅ Security fix cherry-picked (`gray-matter` engine disable) |
 
 ## Which option is right for you?
 
@@ -205,10 +244,10 @@ Yes, for self-hosted. CloudCLI UI reads from and writes to the same `~/.claude` 
 
 ## Community & Support
 
-- **[Documentation](https://cloudcli.ai/docs)** — installation, configuration, features, and troubleshooting
-- **[Discord](https://discord.gg/buxwujPNRE)** — get help and connect with other users
-- **[GitHub Issues](https://github.com/siteboon/claudecodeui/issues)** — bug reports and feature requests
-- **[Contributing Guide](CONTRIBUTING.md)** — how to contribute to the project
+- **Upstream Project**: [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui) — the original project
+- **This Fork**: [FuHesummer/claudecodeui-summer](https://github.com/FuHesummer/claudecodeui-summer) — Summer Edition
+- **Upstream Documentation**: [cloudcli.ai/docs](https://cloudcli.ai/docs) — installation, configuration, features
+- **Upstream Discord**: [discord.gg/buxwujPNRE](https://discord.gg/buxwujPNRE) — upstream community
 
 ## License
 
@@ -217,6 +256,9 @@ GNU General Public License v3.0 - see [LICENSE](LICENSE) file for details.
 This project is open source and free to use, modify, and distribute under the GPL v3 license.
 
 ## Acknowledgments
+
+### Upstream
+- **[CloudCLI / Claude Code UI](https://github.com/siteboon/claudecodeui)** - The original project by Siteboon that this fork is based on
 
 ### Built With
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's official CLI
@@ -235,5 +277,7 @@ This project is open source and free to use, modify, and distribute under the GP
 ---
 
 <div align="center">
-  <strong>Made with care for the Claude Code, Cursor and Codex community.</strong>
+  <strong>Summer Edition ☀️ — Making Claude Code UI better, one stream at a time.</strong>
+  <br><br>
+  <sub>Based on <a href="https://github.com/siteboon/claudecodeui">CloudCLI</a> by <a href="https://siteboon.ai">Siteboon</a></sub>
 </div>

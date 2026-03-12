@@ -1,12 +1,41 @@
 <div align="center">
   <img src="public/logo.svg" alt="Claude Code UI" width="64" height="64">
-  <h1>Cloud CLI (又名 Claude Code UI)</h1>
+  <h1>Claude Code UI — Summer Edition ☀️</h1>
+  <p>基于 <a href="https://github.com/siteboon/claudecodeui">CloudCLI / Claude Code UI</a> 的社区魔改版，专注于增强 <b>Claude Code</b> 体验。<br>实时流式渲染、思考过程可视化、工具进度显示、成本追踪 — 将 VS Code 级别的渲染效果带到 Web UI。</p>
 </div>
 
+> **注意**：这是一个魔改版本（Summer Edition）。原始项目请访问 [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui)。
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code)、[Cursor CLI](https://docs.cursor.com/en/cli/overview) 和 [Codex](https://developers.openai.com/codex) 的桌面端和移动端界面。您可以在本地或远程使用它来查看 Claude Code、Cursor 或 Codex 中的活跃项目和会话,并从任何地方(移动端或桌面端)对它们进行修改。这为您提供了一个在任何地方都能正常使用的合适界面。
+<div align="right"><i><a href="./README.md">English</a> · <b>中文</b></i></div>
 
-<div align="right"><i><a href="./README.md">English</a> · <a href="./README.ru.md">Русский</a> · <a href="./README.ko.md">한국어</a> · <b>中文</b> · <a href="./README.ja.md">日本語</a></i></div>
+---
+
+## Summer Edition 魔改了什么
+
+本 fork 专注于改进 **Claude Code** 集成体验。上游项目支持 Claude Code、Cursor CLI、Codex 和 Gemini CLI — 我们保留了多 provider 支持，但将精力集中在让 Claude Code 体验达到最佳。
+
+### 核心增强
+
+| 特性 | 说明 |
+|---|---|
+| **实时流式渲染** | SDK 消息（`stream_event`、`assistant`、`tool_progress` 等）到达即渲染，不再缓冲 |
+| **思考块可视化** | `<Thinking>` 块实时流式显示，并追踪思考时长（`thinkingDurationMs`） |
+| **工具进度显示** | 运行中的工具显示实时进度条和状态文本 |
+| **子代理容器** | 嵌套代理任务按 taskId 匹配，显示进度日志 |
+| **限速横幅** | API 限速时显示倒计时横幅 |
+| **成本信息栏** | 每次响应的费用、耗时和模型信息显示在输入区域 |
+| **代理状态推送** | SDK 状态消息（读取文件、搜索代码...）通过 ClaudeStatus 实时展示 |
+| **降低流延迟** | 刷新间隔从 100ms 降至 33ms，流式输出更流畅 |
+| **安全加固** | 禁用 gray-matter 的 JS/JSON 引擎，防止前置内容代码执行 |
+
+### 架构变更
+
+- **后端**：SDK 消息经 `classifySDKMessage()` 分类打 `subType` 标签后再通过 WebSocket 转发
+- **前端**：单体 `useChatRealtimeHandlers` 重构为路由入口 + 9 个模块化 handler 文件
+- **类型**：`ChatMessage` 扩展 `isThinking`、`thinkingDurationMs`、`toolName`、`toolInput`、`progressPercentage`、`subagentId` 等字段
+- **i18n**：所有新 UI 字符串已添加到 5 种语言（en、zh-CN、ko、ja、ru）
+
+---
 
 ## 截图
 
@@ -43,147 +72,59 @@
 
 ## 功能特性
 
-- **响应式设计** - 在桌面、平板和移动设备上无缝运行,您也可以在移动端使用 Claude Code、Cursor 或 Codex
-- **交互式聊天界面** - 内置聊天界面,与 Claude Code、Cursor 或 Codex 无缝通信
-- **集成 Shell 终端** - 通过内置 shell 功能直接访问 Claude Code、Cursor CLI 或 Codex
-- **文件浏览器** - 交互式文件树,支持语法高亮和实时编辑
-- **Git 浏览器** - 查看、暂存和提交您的更改。您还可以切换分支
+保留所有上游功能：
+
+- **响应式设计** - 在桌面、平板和移动设备上无缝运行
+- **交互式聊天界面** - 内置聊天界面，与 AI 代理无缝通信
+- **集成 Shell 终端** - 通过内置 shell 功能直接访问 CLI
+- **文件浏览器** - 交互式文件树，支持语法高亮和实时编辑
+- **Git 浏览器** - 查看、暂存和提交您的更改
 - **会话管理** - 恢复对话、管理多个会话并跟踪历史记录
-- **TaskMaster AI 集成** *(可选)* - 通过 AI 驱动的任务规划、PRD 解析和工作流自动化实现高级项目管理
-- **模型兼容性** - 适用于 Claude Sonnet 4.5、Opus 4.5 和 GPT-5.2
+- **TaskMaster AI 集成** *(可选)* - AI 驱动的任务规划和工作流自动化
+
+**Summer Edition 新增：**
+
+- **🔥 实时流式渲染** - SDK 消息到达即渲染（33ms 刷新间隔）
+- **💭 思考过程流式显示** - 实时观看 Claude 思考，带时长追踪
+- **🔧 工具进度显示** - 运行中的工具显示实时进度条
+- **🤖 子代理容器** - 嵌套代理任务带进度日志
+- **⏱️ 成本与耗时追踪** - 每次响应的费用、模型和耗时信息
+- **🚦 限速处理** - 限速时显示可视化倒计时横幅
+- **📡 代理状态推送** - SDK 实时状态文本（读取中、搜索中等）
 
 
 ## 快速开始
 
-### 前置要求
-
-- [Node.js](https://nodejs.org/) v22 或更高版本
-- 已安装并配置 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code),和/或
-- 已安装并配置 [Cursor CLI](https://docs.cursor.com/en/cli/overview),和/或
-- 已安装并配置 [Codex](https://developers.openai.com/codex)
-
-### 一键操作(推荐)
-
-无需安装,直接运行:
+### 开发环境（从此 fork）
 
 ```bash
-npx @siteboon/claude-code-ui
+git clone https://github.com/FuHesummer/claudecodeui-summer.git
+cd claudecodeui-summer
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-服务器将启动并可通过 `http://localhost:3001`(或您配置的 PORT)访问。
+打开 `http://localhost:3001` — 您现有的 Claude Code 会话会被自动发现。
 
-**重启**: 停止服务器后只需再次运行相同的 `npx` 命令
-
-### 全局安装(供常规使用)
-
-为了频繁使用,一次性全局安装:
+### 同步上游
 
 ```bash
-npm install -g @siteboon/claude-code-ui
+git remote add upstream https://github.com/siteboon/claudecodeui.git
+git fetch upstream
+# Cherry-pick 特定提交（由于无共同历史，merge 会冲突）
+git cherry-pick <commit-hash>
 ```
 
-然后使用简单命令启动:
-
-```bash
-claude-code-ui
-```
-
-
-**重启**: 使用 Ctrl+C 停止,然后再次运行 `claude-code-ui`。
-
-**更新**:
-```bash
-cloudcli update
-```
-
-### CLI 使用方法
-
-全局安装后,您可以访问 `claude-code-ui` 和 `cloudcli` 命令:
-
-| 命令 / 选项 | 简写 | 描述 |
-|------------------|-------|-------------|
-| `cloudcli` 或 `claude-code-ui` | | 启动服务器(默认) |
-| `cloudcli start` | | 显式启动服务器 |
-| `cloudcli status` | | 显示配置和数据位置 |
-| `cloudcli update` | | 更新到最新版本 |
-| `cloudcli help` | | 显示帮助信息 |
-| `cloudcli version` | | 显示版本信息 |
-| `--port <port>` | `-p` | 设置服务器端口(默认: 3001) |
-| `--database-path <path>` | | 设置自定义数据库位置 |
-
-**示例:**
-```bash
-cloudcli                          # 使用默认设置启动
-cloudcli -p 8080              # 在自定义端口启动
-cloudcli status                   # 显示当前配置
-```
-
-### 作为后台服务运行(推荐用于生产环境)
-
-在生产环境中,使用 PM2(Process Manager 2)将 Claude Code UI 作为后台服务运行:
-
-#### 安装 PM2
+### PM2 后台运行（生产环境）
 
 ```bash
 npm install -g pm2
+pm2 start ecosystem.config.cjs
+pm2 startup && pm2 save  # 开机自启
 ```
 
-#### 作为后台服务启动
-
-```bash
-# 在后台启动服务器
-pm2 start claude-code-ui --name "claude-code-ui"
-
-# 或使用更短的别名
-pm2 start cloudcli --name "claude-code-ui"
-
-# 在自定义端口启动
-pm2 start cloudcli --name "claude-code-ui" -- --port 8080
-```
-
-
-#### 系统启动时自动启动
-
-要使 Claude Code UI 在系统启动时自动启动:
-
-```bash
-# 为您的平台生成启动脚本
-pm2 startup
-
-# 保存当前进程列表
-pm2 save
-```
-
-
-### 本地开发安装
-
-1. **克隆仓库:**
-```bash
-git clone https://github.com/siteboon/claudecodeui.git
-cd claudecodeui
-```
-
-2. **安装依赖:**
-```bash
-npm install
-```
-
-3. **配置环境:**
-```bash
-cp .env.example .env
-# 使用您喜欢的设置编辑 .env
-```
-
-4. **启动应用程序:**
-```bash
-# 开发模式(支持热重载)
-npm run dev
-
-```
-应用程序将在您在 .env 中指定的端口启动
-
-5. **打开浏览器:**
-   - 开发环境: `http://localhost:3001`
+> 本 fork 已包含 `ecosystem.config.cjs`，配置了 `WORKSPACES_ROOT` 环境变量。
 
 ## 安全与工具配置
 
@@ -317,9 +258,12 @@ Claude Code UI 支持 **[TaskMaster AI](https://github.com/eyaltoledano/claude-t
 
 GNU General Public License v3.0 - 详见 [LICENSE](LICENSE) 文件。
 
-本项目是开源的,在 GPL v3 许可下可自由使用、修改和分发。
+本项目是开源的，在 GPL v3 许可下可自由使用、修改和分发。
 
 ## 致谢
+
+### 上游项目
+- **[CloudCLI / Claude Code UI](https://github.com/siteboon/claudecodeui)** - Siteboon 开发的原始项目，本 fork 基于此构建
 
 ### 构建工具
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic 的官方 CLI
@@ -331,17 +275,16 @@ GNU General Public License v3.0 - 详见 [LICENSE](LICENSE) 文件。
 - **[CodeMirror](https://codemirror.net/)** - 高级代码编辑器
 - **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** *(可选)* - AI 驱动的项目管理和任务规划
 
-## 支持与社区
+## 社区与支持
 
-### 保持更新
-- **Star** 此仓库以表示支持
-- **Watch** 以获取更新和新版本
-- **Follow** 项目以获取公告
+- **上游项目**：[siteboon/claudecodeui](https://github.com/siteboon/claudecodeui) — 原始项目
+- **本 Fork**：[FuHesummer/claudecodeui-summer](https://github.com/FuHesummer/claudecodeui-summer) — Summer Edition
+- **上游文档**：[cloudcli.ai/docs](https://cloudcli.ai/docs) — 安装、配置、功能
 
-### 赞助商
-- [Siteboon - AI powered website builder](https://siteboon.ai)
 ---
 
 <div align="center">
-  <strong>为 Claude Code、Cursor 和 Codex 社区精心打造。</strong>
+  <strong>Summer Edition ☀️ — 让 Claude Code UI 更好，一次流式渲染一个改进。</strong>
+  <br><br>
+  <sub>基于 <a href="https://github.com/siteboon/claudecodeui">CloudCLI</a> by <a href="https://siteboon.ai">Siteboon</a></sub>
 </div>
