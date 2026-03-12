@@ -22,6 +22,7 @@ export function handleTaskLifecycle(
   switch (subType) {
     case 'task_started': {
       const description = data.description || data.prompt || '';
+      const modelName = data.model || data.modelName || '';
 
       // Find an existing SubagentContainer that doesn't yet have a taskId
       // and assign this taskId to it, or create a new notification
@@ -36,12 +37,12 @@ export function handleTaskLifecycle(
           updated[idx] = {
             ...updated[idx],
             subagentState: {
-              childTools: existing.childTools,
-              currentToolIndex: existing.currentToolIndex,
-              isComplete: existing.isComplete,
+              ...existing,
               taskId,
               description: description || existing.description,
-              progressLog: existing.progressLog,
+              modelName: modelName || undefined,
+              elapsedMs: 0,
+              toolCount: 0,
             },
           };
           return updated;
@@ -65,11 +66,7 @@ export function handleTaskLifecycle(
             return {
               ...msg,
               subagentState: {
-                childTools: state.childTools,
-                currentToolIndex: state.currentToolIndex,
-                isComplete: state.isComplete,
-                taskId: state.taskId,
-                description: state.description,
+                ...state,
                 progressLog: [...existing, progressContent],
               },
             };
@@ -91,12 +88,9 @@ export function handleTaskLifecycle(
             return {
               ...msg,
               subagentState: {
-                childTools: state.childTools,
-                currentToolIndex: state.currentToolIndex,
+                ...state,
                 isComplete,
-                taskId: state.taskId,
-                description: state.description,
-                progressLog: state.progressLog,
+                toolCount: state.childTools.length,
               },
             };
           }
