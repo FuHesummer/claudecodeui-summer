@@ -18,8 +18,8 @@ The fork (`claudecodeui-summer`) has no CI/CD pipeline for npm publishing. The u
 
 | Field | Value |
 |---|---|
-| npm name | `@fuhesummer/claude-code-ui` |
-| npm scope | `@fuhesummer` (requires npmjs.com org) |
+| npm name | `@ccui-summer/claude-code-ui` |
+| npm scope | `@ccui-summer` (requires npmjs.com org) |
 | Repository | `https://github.com/FuHesummer/claudecodeui-summer` |
 
 ### Branch Strategy
@@ -54,7 +54,7 @@ dev (daily development)
 7. Overwrite `package.json` version to `{version}-beta.{run_number}`
 8. `npm publish --tag beta`
 
-**npm tag**: `@beta` — users install via `npm i @fuhesummer/claude-code-ui@beta`
+**npm tag**: `@beta` — users install via `npm i @ccui-summer/claude-code-ui@beta`
 
 ### Release Channel (`release.yml`)
 
@@ -75,7 +75,7 @@ dev (daily development)
 7. `npm run build`
 8. Run `release-it` with CI flags (auto-bump version, create git tag, GitHub Release, npm publish)
 
-**npm tag**: `@latest` (default) — users install via `npm i @fuhesummer/claude-code-ui`
+**npm tag**: `@latest` (default) — users install via `npm i @ccui-summer/claude-code-ui`
 
 ### Secrets Required
 
@@ -88,7 +88,7 @@ dev (daily development)
 
 | File | Change |
 |---|---|
-| `package.json` | `name` → `@fuhesummer/claude-code-ui`, update `repository`/`homepage`/`bugs` URLs |
+| `package.json` | `name` → `@ccui-summer/claude-code-ui`, update `repository`/`homepage`/`bugs` URLs |
 | `.release-it.json` | Update `releaseName`, keep conventional-changelog config |
 | `.github/workflows/beta.yml` | **NEW** — beta publish workflow |
 | `.github/workflows/release.yml` | **NEW** — release publish workflow |
@@ -106,20 +106,20 @@ dev (daily development)
 
 ```bash
 # Stable release
-npm install @fuhesummer/claude-code-ui
+npm install @ccui-summer/claude-code-ui
 
 # Latest beta
-npm install @fuhesummer/claude-code-ui@beta
+npm install @ccui-summer/claude-code-ui@beta
 
 # Specific beta
-npm install @fuhesummer/claude-code-ui@1.25.0-beta.42
+npm install @ccui-summer/claude-code-ui@1.25.0-beta.42
 ```
 
 ## User Prerequisites
 
 Before the pipeline can work:
 
-1. Create `@fuhesummer` organization on npmjs.com
+1. Create `@ccui-summer` organization on npmjs.com
 2. Generate npm access token (Automation type recommended)
 3. Add `NPM_TOKEN` secret to GitHub repo settings (Settings → Secrets → Actions)
 4. Create `dev` branch from current `main`
@@ -133,6 +133,6 @@ Before the pipeline can work:
 
 ## Relationship to Upstream
 
-- Package name changes from `@siteboon/claude-code-ui` to `@fuhesummer/claude-code-ui`
+- Package name changes from `@siteboon/claude-code-ui` to `@ccui-summer/claude-code-ui`
 - This is a completely separate npm package — no conflict with upstream publishing
 - Upstream's `release.sh` / `.release-it.json` patterns are preserved and adapted

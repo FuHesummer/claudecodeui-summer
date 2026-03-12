@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Set up automated npm publishing with separate beta (`@beta` tag on dev push) and release (`@latest` tag on main merge) channels for `@fuhesummer/claude-code-ui`.
+**Goal:** Set up automated npm publishing with separate beta (`@beta` tag on dev push) and release (`@latest` tag on main merge) channels for `@ccui-summer/claude-code-ui`.
 
-**Architecture:** Two GitHub Actions workflows — `beta.yml` triggers on `dev` push to publish pre-release versions, `release.yml` triggers on `main` push to run `release-it` for stable version bumps + GitHub Releases. Package identity updated from `@siteboon` to `@fuhesummer` scope.
+**Architecture:** Two GitHub Actions workflows — `beta.yml` triggers on `dev` push to publish pre-release versions, `release.yml` triggers on `main` push to run `release-it` for stable version bumps + GitHub Releases. Package identity updated from `@siteboon` to `@ccui-summer` scope.
 
 **Tech Stack:** GitHub Actions, npm registry, release-it with conventional-changelog plugin, Node.js 22
 
@@ -21,10 +21,10 @@
 
 - [ ] **Step 1: Update package name**
 
-Change `name` from `@siteboon/claude-code-ui` to `@fuhesummer/claude-code-ui`:
+Change `name` from `@siteboon/claude-code-ui` to `@ccui-summer/claude-code-ui`:
 
 ```json
-"name": "@fuhesummer/claude-code-ui",
+"name": "@ccui-summer/claude-code-ui",
 ```
 
 - [ ] **Step 2: Update repository URL**
@@ -71,7 +71,7 @@ Expected: `Valid JSON`
 
 ```bash
 git add package.json
-git commit -m "chore: update package identity to @fuhesummer/claude-code-ui"
+git commit -m "chore: update package identity to @ccui-summer/claude-code-ui"
 ```
 
 ### Task 2: Create .npmrc for CI authentication
@@ -353,7 +353,7 @@ This is a summary of manual steps the user must complete outside of this codebas
 
 The user must complete these steps before the pipeline will work:
 
-1. **Create npm org**: Go to https://www.npmjs.com/org/create → create `@fuhesummer`
+1. **Create npm org**: Go to https://www.npmjs.com/org/create → create `@ccui-summer`
 2. **Generate token**: npmjs.com → Access Tokens → Generate New Token → type "Automation"
 3. **Add GitHub Secret**: GitHub repo → Settings → Secrets and variables → Actions → New repository secret → Name: `NPM_TOKEN`, Value: the token from step 2
 

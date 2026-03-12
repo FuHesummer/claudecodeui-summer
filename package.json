@@ -1,5 +1,5 @@
 {
-  "name": "@fuhesummer/claude-code-ui",
+  "name": "@ccui-summer/claude-code-ui",
   "version": "1.25.0",
   "description": "A web-based UI for Claude Code CLI",
   "type": "module",
