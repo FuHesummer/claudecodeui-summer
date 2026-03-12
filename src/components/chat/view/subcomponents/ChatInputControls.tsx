@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { PermissionMode, Provider } from '../../types/types';
+import type { CostInfo, PermissionMode, Provider } from '../../types/types';
+import CostInfoBar from './CostInfoBar';
 import ThinkingModeSelector from './ThinkingModeSelector';
 import TokenUsagePie from './TokenUsagePie';
 
@@ -11,6 +12,7 @@ interface ChatInputControlsProps {
   thinkingMode: string;
   setThinkingMode: React.Dispatch<React.SetStateAction<string>>;
   tokenBudget: { used?: number; total?: number } | null;
+  costInfo?: CostInfo | null;
   slashCommandsCount: number;
   onToggleCommandMenu: () => void;
   hasInput: boolean;
@@ -27,6 +29,7 @@ export default function ChatInputControls({
   thinkingMode,
   setThinkingMode,
   tokenBudget,
+  costInfo,
   slashCommandsCount,
   onToggleCommandMenu,
   hasInput,
@@ -79,6 +82,8 @@ export default function ChatInputControls({
       )}
 
       <TokenUsagePie used={tokenBudget?.used || 0} total={tokenBudget?.total || parseInt(import.meta.env.VITE_CONTEXT_WINDOW) || 160000} />
+
+      {costInfo && <CostInfoBar costInfo={costInfo} />}
 
       <button
         type="button"

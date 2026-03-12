@@ -12,7 +12,7 @@ import type {
   TouchEvent,
 } from 'react';
 import MicButton from '../../../mic-button/view/MicButton';
-import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
+import type { CostInfo, PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
 import ImageAttachment from './ImageAttachment';
@@ -50,6 +50,7 @@ interface ChatComposerProps {
   thinkingMode: string;
   setThinkingMode: Dispatch<SetStateAction<string>>;
   tokenBudget: { used?: number; total?: number } | null;
+  costInfo?: CostInfo | null;
   slashCommandsCount: number;
   onToggleCommandMenu: () => void;
   hasInput: boolean;
@@ -107,6 +108,7 @@ export default function ChatComposer({
   thinkingMode,
   setThinkingMode,
   tokenBudget,
+  costInfo,
   slashCommandsCount,
   onToggleCommandMenu,
   hasInput,
@@ -195,6 +197,7 @@ export default function ChatComposer({
           thinkingMode={thinkingMode}
           setThinkingMode={setThinkingMode}
           tokenBudget={tokenBudget}
+          costInfo={costInfo}
           slashCommandsCount={slashCommandsCount}
           onToggleCommandMenu={onToggleCommandMenu}
           hasInput={hasInput}
