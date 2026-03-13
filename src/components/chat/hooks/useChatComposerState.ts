@@ -301,6 +301,19 @@ export function useChatComposerState({
         return;
       }
 
+      if (command.name === 'compact') {
+        sendMessage({ type: 'compact-context', sessionId: selectedSession?.id });
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            type: 'assistant',
+            content: '🗜 Context compaction requested...',
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+
       try {
         const effectiveInput = rawInput ?? input;
         const commandMatch = effectiveInput.match(new RegExp(`${escapeRegExp(command.name)}\\s*(.*)`));
@@ -684,6 +697,7 @@ export function useChatComposerState({
             permissionMode,
             model: claudeModel,
             images: uploadedImages,
+            maxTokens: parseInt(localStorage.getItem('contextWindowSize') || '') || undefined,
           },
         });
       }

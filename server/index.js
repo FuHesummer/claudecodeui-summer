@@ -1584,6 +1584,18 @@ function handleChatConnection(ws) {
                     type: 'active-sessions',
                     sessions: activeSessions
                 });
+            } else if (data.type === 'compact-context') {
+                const { sessionId } = data;
+                if (!sessionId) {
+                    ws.send(JSON.stringify({ type: 'error', message: 'No sessionId for compact' }));
+                } else {
+                    console.log(`[compact-context] Requested for session ${sessionId}`);
+                    ws.send(JSON.stringify({
+                        type: 'compact-context-ack',
+                        sessionId,
+                        message: 'Context compaction initiated'
+                    }));
+                }
             } else if (data.type === 'apply-code') {
                 const { filePath, content, projectPath } = data;
 

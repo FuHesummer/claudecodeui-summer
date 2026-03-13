@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CostInfo, PermissionMode, Provider } from '../../types/types';
+import ContextUsageIndicator from './ContextUsageIndicator';
 import CostInfoBar from './CostInfoBar';
 import ThinkingModeSelector from './ThinkingModeSelector';
-import TokenUsagePie from './TokenUsagePie';
 
 interface ChatInputControlsProps {
   permissionMode: PermissionMode | string;
@@ -92,7 +92,7 @@ export default function ChatInputControls({
         <ThinkingModeSelector selectedMode={thinkingMode} onModeChange={setThinkingMode} onClose={() => {}} className="" />
       )}
 
-      <TokenUsagePie used={tokenBudget?.used || 0} total={tokenBudget?.total || parseInt(import.meta.env.VITE_CONTEXT_WINDOW) || 160000} />
+      <ContextUsageIndicator used={tokenBudget?.used || 0} total={tokenBudget?.total || parseInt(import.meta.env.VITE_CONTEXT_WINDOW) || 160000} />
 
       {costInfo && <CostInfoBar costInfo={costInfo} />}
 

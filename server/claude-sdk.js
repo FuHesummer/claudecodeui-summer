@@ -222,6 +222,14 @@ function mapCliOptionsToSDK(options = {}) {
     sdkOptions.resume = sessionId;
   }
 
+  // Map max tokens (context window override from frontend)
+  if (options.maxTokens && typeof options.maxTokens === 'number') {
+    const backendMax = parseInt(process.env.CONTEXT_WINDOW) || 160000;
+    if (options.maxTokens <= backendMax) {
+      sdkOptions.contextWindow = options.maxTokens;
+    }
+  }
+
   return sdkOptions;
 }
 

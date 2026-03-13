@@ -55,6 +55,11 @@ const builtInCommands: SlashCommand[] = [
     description: 'Toggle YOLO mode (bypass all permissions)',
     type: 'builtin',
   },
+  {
+    name: 'compact',
+    description: 'Trigger context window compaction',
+    type: 'builtin',
+  },
 ];
 
 export function useSlashCommands({
