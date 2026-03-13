@@ -828,9 +828,29 @@ export function useChatComposerState({
         return;
       }
 
+      // Esc clears input when no overlay is open
+      if (event.key === 'Escape' && !showCommandMenu && !showFileDropdown) {
+        event.preventDefault();
+        if (input.trim()) {
+          setInput('');
+          inputValueRef.current = '';
+          if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+          }
+        }
+        return;
+      }
+
       if (event.key === 'Tab' && !showFileDropdown && !showCommandMenu) {
         event.preventDefault();
         cyclePermissionMode();
+        return;
+      }
+
+      // Ctrl+/ toggles command panel
+      if ((event.ctrlKey || event.metaKey) && event.key === '/') {
+        event.preventDefault();
+        handleToggleCommandMenu();
         return;
       }
 
@@ -853,9 +873,13 @@ export function useChatComposerState({
       handleCommandMenuKeyDown,
       handleFileMentionsKeyDown,
       handleSubmit,
+      handleToggleCommandMenu,
+      input,
       sendByCtrlEnter,
+      setInput,
       showCommandMenu,
       showFileDropdown,
+      textareaRef,
     ],
   );
 
