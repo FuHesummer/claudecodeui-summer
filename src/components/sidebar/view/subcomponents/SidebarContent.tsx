@@ -269,7 +269,7 @@ export default function SidebarContent({
 
       {/* Tab Navigation — pinned to bottom, desktop only */}
       <div className="mt-auto hidden flex-shrink-0 border-t border-border/40 p-2 md:block">
-        <nav className="flex flex-col gap-0.5" aria-label="Content tabs">
+        <nav className="flex flex-col gap-0.5" aria-label="Content tabs" role="tablist">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
             const displayLabel = tab.kind === 'builtin' ? t(tab.labelKey) : tab.label;
@@ -278,6 +278,8 @@ export default function SidebarContent({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                role="tab"
+                aria-selected={isActive}
                 className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
                   isActive
                     ? 'border-l-2 border-primary bg-primary/10 font-medium text-primary'

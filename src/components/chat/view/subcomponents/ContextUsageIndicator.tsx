@@ -31,9 +31,11 @@ export default function ContextUsageIndicator({ used, total }: ContextUsageIndic
         onClick={() => setShowPopover(!showPopover)}
         className="flex items-center gap-1.5 rounded-md border border-border/40 px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/50"
         title="Context window usage"
+        aria-label={`Context window usage: ${pct}% used`}
+        aria-expanded={showPopover}
       >
         <span style={{ color }}>{pct}%</span>
-        <div className="flex h-1.5 w-10 overflow-hidden rounded-full bg-muted">
+        <div className="flex h-1.5 w-10 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Context usage">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }}

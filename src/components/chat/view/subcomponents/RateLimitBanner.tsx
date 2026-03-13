@@ -40,7 +40,7 @@ const RateLimitBanner = memo(({ rateLimitState, onExpired }: RateLimitBannerProp
   const secondsRemaining = Math.ceil(remainingMs / 1000);
 
   return (
-    <div className="pointer-events-none fixed left-0 right-0 top-4 z-50 flex justify-center">
+    <div className="pointer-events-none fixed left-0 right-0 top-4 z-50 flex justify-center" role="alert" aria-live="assertive">
       <div className="pointer-events-auto rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-2 shadow-lg dark:border-amber-600/40 dark:bg-amber-900/80">
         <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
           <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

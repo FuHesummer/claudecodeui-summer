@@ -18,7 +18,7 @@ export default function AssistantThinkingIndicator({ selectedProvider }: Assista
             {selectedProvider === 'cursor' ? 'Cursor' : selectedProvider === 'codex' ? 'Codex' : selectedProvider === 'gemini' ? 'Gemini' : 'Claude'}
           </div>
         </div>
-        <div className="w-full pl-3 text-sm text-gray-500 dark:text-gray-400 sm:pl-0">
+        <div className="w-full pl-3 text-sm text-gray-500 dark:text-gray-400 sm:pl-0" role="status" aria-live="polite" aria-label="Assistant is thinking">
           <div className="flex items-center space-x-1">
             <div className="animate-pulse">.</div>
             <div className="animate-pulse" style={{ animationDelay: '0.2s' }}>

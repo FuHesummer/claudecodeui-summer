@@ -326,6 +326,8 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
           onClick={() => setCompactExpanded(!compactExpanded)}
           className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted/50"
           style={{ borderRadius: 'var(--chat-radius-tool, 0.375rem)' }}
+          aria-expanded={compactExpanded}
+          aria-label={`Tool: ${toolName}`}
         >
           <span className="text-xs text-muted-foreground">{compactExpanded ? '▼' : '▶'}</span>
           <span className={`font-mono text-xs font-semibold ${accentColor}`}>{toolName}</span>

@@ -48,6 +48,7 @@ export default function ChatInputControls({
           onClick={onModeSwitch}
           className="flex items-center gap-1 rounded-md bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50"
           title={t('input.yoloTooltip', { defaultValue: 'All tool permissions auto-approved. Equivalent to --dangerously-skip-permissions' })}
+          aria-label={t('input.yoloTooltip', { defaultValue: 'YOLO mode active — all tool permissions auto-approved' })}
         >
           <span>⚡</span>
           <span>YOLO</span>

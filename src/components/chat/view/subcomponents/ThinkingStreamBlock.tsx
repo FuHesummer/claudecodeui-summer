@@ -49,6 +49,8 @@ const ThinkingStreamBlock = memo(({ content, isStreaming, durationMs }: Thinking
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        aria-expanded={expanded}
+        aria-label="Toggle thinking block"
       >
         <span className={isStreaming ? 'animate-pulse' : ''}>💭</span>
         <span className="font-medium">Thinking</span>
