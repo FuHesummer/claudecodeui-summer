@@ -1,15 +1,48 @@
-import { type ReactNode } from 'react';
-import { Folder, MessageSquare, Search } from 'lucide-react';
+import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { Folder, MessageSquare, Search, Terminal, GitBranch, ClipboardCheck, type LucideIcon } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { ScrollArea } from '../../../../shared/view/ui';
-import type { Project } from '../../../../types/app';
+import type { AppTab, Project } from '../../../../types/app';
 import type { ReleaseInfo } from '../../../../types/sharedTypes';
 import type { ConversationSearchResults, SearchProgress } from '../../hooks/useSidebarController';
+import { usePlugins } from '../../../../contexts/PluginsContext';
+import PluginIcon from '../../../plugins/view/PluginIcon';
 import SidebarFooter from './SidebarFooter';
 import SidebarHeader from './SidebarHeader';
 import SidebarProjectList, { type SidebarProjectListProps } from './SidebarProjectList';
 
 type SearchMode = 'projects' | 'conversations';
+
+type BuiltInTab = {
+  kind: 'builtin';
+  id: AppTab;
+  labelKey: string;
+  icon: LucideIcon;
+};
+
+type PluginTab = {
+  kind: 'plugin';
+  id: AppTab;
+  label: string;
+  pluginName: string;
+  iconFile: string;
+};
+
+type TabDefinition = BuiltInTab | PluginTab;
+
+const BASE_TABS: BuiltInTab[] = [
+  { kind: 'builtin', id: 'chat',  labelKey: 'tabs.chat',  icon: MessageSquare },
+  { kind: 'builtin', id: 'shell', labelKey: 'tabs.shell', icon: Terminal },
+  { kind: 'builtin', id: 'files', labelKey: 'tabs.files', icon: Folder },
+  { kind: 'builtin', id: 'git',   labelKey: 'tabs.git',   icon: GitBranch },
+];
+
+const TASKS_TAB: BuiltInTab = {
+  kind: 'builtin',
+  id: 'tasks',
+  labelKey: 'tabs.tasks',
+  icon: ClipboardCheck,
+};
 
 function HighlightedSnippet({ snippet, highlights }: { snippet: string; highlights: { start: number; end: number }[] }) {
   const parts: ReactNode[] = [];
@@ -59,6 +92,9 @@ type SidebarContentProps = {
   onShowVersionModal: () => void;
   onShowSettings: () => void;
   projectListProps: SidebarProjectListProps;
+  activeTab: AppTab;
+  setActiveTab: Dispatch<SetStateAction<AppTab>>;
+  shouldShowTasksTab: boolean;
   t: TFunction;
 };
 
@@ -86,10 +122,28 @@ export default function SidebarContent({
   onShowVersionModal,
   onShowSettings,
   projectListProps,
+  activeTab,
+  setActiveTab,
+  shouldShowTasksTab,
   t,
 }: SidebarContentProps) {
   const showConversationSearch = searchMode === 'conversations' && searchFilter.trim().length >= 2;
   const hasPartialResults = conversationResults && conversationResults.results.length > 0;
+  const { plugins } = usePlugins();
+
+  const builtInTabs: BuiltInTab[] = shouldShowTasksTab ? [...BASE_TABS, TASKS_TAB] : BASE_TABS;
+
+  const pluginTabs: PluginTab[] = plugins
+    .filter((p) => p.enabled)
+    .map((p) => ({
+      kind: 'plugin' as const,
+      id: `plugin:${p.name}` as AppTab,
+      label: p.displayName,
+      pluginName: p.name,
+      iconFile: p.icon,
+    }));
+
+  const tabs: TabDefinition[] = [...builtInTabs, ...pluginTabs];
 
   return (
     <div
@@ -212,6 +266,39 @@ export default function SidebarContent({
           <SidebarProjectList {...projectListProps} />
         )}
       </ScrollArea>
+
+      {/* Tab Navigation — pinned to bottom, desktop only */}
+      <div className="mt-auto hidden flex-shrink-0 border-t border-border/40 p-2 md:block">
+        <nav className="flex flex-col gap-0.5" aria-label="Content tabs">
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTab;
+            const displayLabel = tab.kind === 'builtin' ? t(tab.labelKey) : tab.label;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  isActive
+                    ? 'border-l-2 border-primary bg-primary/10 font-medium text-primary'
+                    : 'border-l-2 border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {tab.kind === 'builtin' ? (
+                  <tab.icon className="h-4 w-4" strokeWidth={isActive ? 2.2 : 1.8} />
+                ) : (
+                  <PluginIcon
+                    pluginName={tab.pluginName}
+                    iconFile={tab.iconFile}
+                    className="flex h-4 w-4 items-center justify-center [&>svg]:h-full [&>svg]:w-full"
+                  />
+                )}
+                <span>{displayLabel}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
       <SidebarFooter
         updateAvailable={updateAvailable}

@@ -231,3 +231,41 @@ export const normalizeProjectForSettings = (project: Project): SettingsProject =
         : fallbackPath,
   };
 };
+
+export type SessionTimeGroup = {
+  label: string;
+  labelKey: string;
+  sessions: SessionWithProvider[];
+};
+
+export const groupSessionsByTime = (
+  sessions: SessionWithProvider[],
+  t: TFunction,
+): SessionTimeGroup[] => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const thisWeek = new Date(today.getTime() - 7 * 86400000);
+
+  const groups: SessionTimeGroup[] = [
+    { label: t('sessions.today', 'Today'), labelKey: 'today', sessions: [] },
+    { label: t('sessions.yesterday', 'Yesterday'), labelKey: 'yesterday', sessions: [] },
+    { label: t('sessions.thisWeek', 'This Week'), labelKey: 'thisWeek', sessions: [] },
+    { label: t('sessions.older', 'Older'), labelKey: 'older', sessions: [] },
+  ];
+
+  for (const session of sessions) {
+    const date = getSessionDate(session);
+    if (date >= today) {
+      groups[0].sessions.push(session);
+    } else if (date >= yesterday) {
+      groups[1].sessions.push(session);
+    } else if (date >= thisWeek) {
+      groups[2].sessions.push(session);
+    } else {
+      groups[3].sessions.push(session);
+    }
+  }
+
+  return groups.filter((group) => group.sessions.length > 0);
+};

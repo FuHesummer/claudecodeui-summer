@@ -1,4 +1,5 @@
-import type { LoadingProgress, Project, ProjectSession, SessionProvider } from '../../../types/app';
+import type { LoadingProgress, Project, ProjectSession, SessionProvider, AppTab } from '../../../types/app';
+import type { Dispatch, SetStateAction } from 'react';
 
 export type ProjectSortOrder = 'name' | 'date';
 
@@ -38,6 +39,10 @@ export type SidebarProps = {
   settingsInitialTab: string;
   onCloseSettings: () => void;
   isMobile: boolean;
+  // Tab navigation props (moved from MainContentHeader)
+  activeTab: AppTab;
+  setActiveTab: Dispatch<SetStateAction<AppTab>>;
+  shouldShowTasksTab: boolean;
 };
 
 export type SessionViewModel = {

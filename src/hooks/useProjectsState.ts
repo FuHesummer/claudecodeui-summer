@@ -523,6 +523,9 @@ export function useProjectsState({
       settingsInitialTab,
       onCloseSettings: () => setShowSettings(false),
       isMobile,
+      activeTab,
+      setActiveTab,
+      shouldShowTasksTab: false, // placeholder, computed in Sidebar via hooks
     }),
     [
       handleNewSession,
@@ -539,6 +542,8 @@ export function useProjectsState({
       selectedProject,
       selectedSession,
       showSettings,
+      activeTab,
+      setActiveTab,
     ],
   );
 

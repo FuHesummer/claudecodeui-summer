@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 import { Button } from '../../../../shared/view/ui';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type { SessionWithProvider } from '../../types/types';
+import { groupSessionsByTime } from '../../utils/utils';
 import SidebarSessionItem from './SidebarSessionItem';
 
 type SidebarProjectSessionsProps = {
@@ -87,24 +88,31 @@ export default function SidebarProjectSessions({
           <p className="text-xs text-muted-foreground">{t('sessions.noSessions')}</p>
         </div>
       ) : (
-        sessions.map((session) => (
-          <SidebarSessionItem
-            key={session.id}
-            project={project}
-            session={session}
-            selectedSession={selectedSession}
-            currentTime={currentTime}
-            editingSession={editingSession}
-            editingSessionName={editingSessionName}
-            onEditingSessionNameChange={onEditingSessionNameChange}
-            onStartEditingSession={onStartEditingSession}
-            onCancelEditingSession={onCancelEditingSession}
-            onSaveEditingSession={onSaveEditingSession}
-            onProjectSelect={onProjectSelect}
-            onSessionSelect={onSessionSelect}
-            onDeleteSession={onDeleteSession}
-            t={t}
-          />
+        groupSessionsByTime(sessions, t).map((group) => (
+          <div key={group.labelKey}>
+            <h4 className="px-3 py-1 text-xs font-medium uppercase text-muted-foreground/60">
+              {group.label}
+            </h4>
+            {group.sessions.map((session) => (
+              <SidebarSessionItem
+                key={session.id}
+                project={project}
+                session={session}
+                selectedSession={selectedSession}
+                currentTime={currentTime}
+                editingSession={editingSession}
+                editingSessionName={editingSessionName}
+                onEditingSessionNameChange={onEditingSessionNameChange}
+                onStartEditingSession={onStartEditingSession}
+                onCancelEditingSession={onCancelEditingSession}
+                onSaveEditingSession={onSaveEditingSession}
+                onProjectSelect={onProjectSelect}
+                onSessionSelect={onSessionSelect}
+                onDeleteSession={onDeleteSession}
+                t={t}
+              />
+            ))}
+          </div>
         ))
       )}
 

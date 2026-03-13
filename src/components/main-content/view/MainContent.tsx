@@ -98,11 +98,8 @@ function MainContent({
   return (
     <div className="flex h-full flex-col">
       <MainContentHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         selectedProject={selectedProject}
         selectedSession={selectedSession}
-        shouldShowTasksTab={shouldShowTasksTab}
         isMobile={isMobile}
         onMenuClick={onMenuClick}
       />

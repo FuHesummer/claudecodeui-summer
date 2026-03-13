@@ -35,6 +35,9 @@ function Sidebar({
   settingsInitialTab,
   onCloseSettings,
   isMobile,
+  activeTab,
+  setActiveTab,
+  shouldShowTasksTab,
 }: SidebarProps) {
   const { t } = useTranslation(['sidebar', 'common']);
   const { isPWA } = useDeviceSettings({ trackMobile: false });
@@ -45,7 +48,10 @@ function Sidebar({
   const { preferences, setPreference } = useUiPreferences();
   const { sidebarVisible } = preferences;
   const { setCurrentProject, mcpServerStatus } = useTaskMaster() as TaskMasterSidebarContext;
-  const { tasksEnabled } = useTasksSettings();
+  const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings() as { tasksEnabled: boolean; isTaskMasterInstalled: boolean | null };
+
+  // Compute shouldShowTasksTab locally instead of relying on the prop placeholder
+  const computedShouldShowTasksTab = Boolean(tasksEnabled && isTaskMasterInstalled);
 
   const {
     isSidebarCollapsed,
@@ -269,6 +275,9 @@ function Sidebar({
             onShowVersionModal={() => setShowVersionModal(true)}
             onShowSettings={onShowSettings}
             projectListProps={projectListProps}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            shouldShowTasksTab={computedShouldShowTasksTab}
             t={t}
           />
         </>
